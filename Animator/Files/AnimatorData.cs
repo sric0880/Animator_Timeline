@@ -7,7 +7,6 @@ using System.Linq;
 public class AnimatorData : MonoBehaviour {
 	// show
 	public List<AMTake> takes = new List<AMTake>();
-	public AMTake playOnStart = null;
 	// hide
 	
 	[HideInInspector] public bool isPlaying {
@@ -28,7 +27,6 @@ public class AnimatorData : MonoBehaviour {
 	[HideInInspector] public float zoom = 0.4f;
 	[HideInInspector] public int currentTake;
 	[HideInInspector] public int codeLanguage = 0; 	// 0 = C#, 1 = Javascript
-	[HideInInspector] public float gizmo_size = 0.05f;
 	[HideInInspector] public float width_track = 150f;
 	// temporary variables for selecting a property
 	//[HideInInspector] public bool didSelectProperty = false;
@@ -101,16 +99,9 @@ public class AnimatorData : MonoBehaviour {
 		return null;
 	}
 	
-	void Start() {
-		if(playOnStart) {
-			Play (playOnStart.name,true,0f,false);
-			playOnStart = null;
-		}
-	}
-	
 	void OnDrawGizmos() {
 		if(!isAnimatorOpen) return;
-		takes[currentTake].drawGizmos(gizmo_size, inPlayMode);		
+		takes[currentTake].drawGizmos(0.1f, inPlayMode);
 	}
 	
 	void Update() {
@@ -234,7 +225,6 @@ public class AnimatorData : MonoBehaviour {
 	
 	public void deleteTake(int index) {
 		//if(shouldCheckDependencies) shouldCheckDependencies = false;
-		if(playOnStart == takes[index]) playOnStart = null;
 		takes[index].destroy();
 		takes.RemoveAt(index);
 		if((currentTake>=index)&&(currentTake>0)) currentTake--;
@@ -294,18 +284,7 @@ public class AnimatorData : MonoBehaviour {
 		}
 		return false;
 	}
-	public bool setGizmoSize(float gizmo_size) {
-		if(this.gizmo_size != gizmo_size) {
-			this.gizmo_size = gizmo_size;
-			// update target gizmo size
-			foreach(Object target in GameObject.FindObjectsOfType(typeof(AMTarget))) {
-				if((target as AMTarget).gizmo_size != gizmo_size) (target as AMTarget).gizmo_size = gizmo_size;
-			}
-			return true;
-		}
-		return false;
-	}
-	
+
 	/*public bool setShowWarningForLostReferences(bool showWarningForLostReferences) {
 		if(this.showWarningForLostReferences != showWarningForLostReferences) {
 			this.showWarningForLostReferences = showWarningForLostReferences;

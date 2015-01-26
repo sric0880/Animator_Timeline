@@ -16,7 +16,6 @@ public class AMTakeExport : EditorWindow {
 	
 	public static AMTake take = null;
 	
-	private AMOptionsFile oData;
 	private AnimatorData aData;
 	
 	List<GameObject> dependencies;
@@ -40,7 +39,6 @@ public class AMTakeExport : EditorWindow {
 		this.title = "Export Take" + (take == null ? "s" : "");
 		this.minSize = new Vector2(190f,120f);
 		
-		oData = AMOptionsFile.loadFile();
 	}
 	void OnDisable() {
 		window = null;	
@@ -84,7 +82,7 @@ public class AMTakeExport : EditorWindow {
 	}
 	void OnGUI() {
 		
-		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
+//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		GUIStyle padding = new GUIStyle();
 		padding.padding = new RectOffset(3,3,3,3);
 		GUILayout.BeginVertical(padding);

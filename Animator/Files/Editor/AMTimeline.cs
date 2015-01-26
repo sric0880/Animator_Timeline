@@ -26,7 +26,6 @@ public class AMTimeline : EditorWindow {
 			indexMethodInfo = -1;	// re-check for methodinfo
 		}
 	}// AnimatorData component, holds all data
-	public AMOptionsFile oData;
 	private Vector2 scrollViewValue;			// current value in scrollview (vertical)
 	private string[] playbackSpeed = {"x.25","x.5","x1","x2","x4"};
 	private float[] playbackSpeedValue = {.25f,.5f,1f,2f,4f};
@@ -150,12 +149,11 @@ public class AMTimeline : EditorWindow {
 		"Camera Switcher"
 	};
 	// skins
-	public static string global_skin = "am_skin_blue";
-	private GUISkin skin = null;
-	private string cachedSkinName = null;
+	public static string global_skin = "am_skin_dark";
+	private static GUISkin _skin = null;
+
 	// dimensions
 	private float margin = 2f;
-	private float width_window_minimum = 810;
 	private float padding_track = 3f;
 	private float width_track = 150f;
 	private float width_track_min = 135f;
@@ -236,6 +234,7 @@ public class AMTimeline : EditorWindow {
 	private Texture texIconCameraSwitcher = (Texture)Resources.Load("am_icon_cameraswitcher");
 	
 	// temporary variables
+	private bool time_numbering = false;
 	private bool isPlayMode = false; 		// whether the user is in play mode, used to close AMTimeline when in play mode
 	private bool isRenamingTake = false;	// true if the user is renaming the current take
 	private int isRenamingTrack = -1;		// the track the is user renaming, -1 if not renaming a track
@@ -347,8 +346,11 @@ public class AMTimeline : EditorWindow {
 	
 	void OnEnable() {
 		this.title = "Animator";
-		this.minSize = new Vector2(width_track+width_playback_controls+width_inspector_open+70f,190f);
+		this.minSize = new Vector2(810f,190f);
+//		this.minSize = new Vector2(width_track+width_playback_controls+width_inspector_open+70f,190f);
 		window = this;
+
+
 		//this.wantsMouseMove = true;
 		// find component
 		GameObject go = GameObject.Find ("AnimatorData");
@@ -363,7 +365,6 @@ public class AMTimeline : EditorWindow {
 				if(!isPlayMode) aData.getCurrentTake().previewFrame((float)aData.getCurrentTake().selectedFrame);
 			}
 		}
-		oData = AMOptionsFile.loadFile();
 		// set default current dimensions of frames
 		//current_width_frame = width_frame;
 		//current_height_frame = height_frame;
@@ -496,7 +497,8 @@ public class AMTimeline : EditorWindow {
 		}
 	}
 	void OnGUI() {
-		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
+
+		AMTimeline.loadSkin(position);
 		if (EditorApplication.isPlayingOrWillChangePlaymode) {
 			this.ShowNotification(new GUIContent("Play Mode"));
 			return;
@@ -516,8 +518,7 @@ public class AMTimeline : EditorWindow {
 		
 		//if(oData.disableTimelineActions) current_height_frame = height_track;
 		//else current_height_frame = height_frame;
-		if(oData.disableTimelineActions) height_action_min = 0f;
-		else height_action_min = 45f;
+		height_action_min = 45f;
 		#region no data component
 		if(!aData) {
 			// recheck for component
@@ -539,38 +540,11 @@ public class AMTimeline : EditorWindow {
 					// save data
 					setDirtyTakes(aData.takes);
 					
-					oData = AMOptionsFile.loadFile();
 				}
 				return;
 			}	
 		}
-		if(!oData) {
-			oData = AMOptionsFile.loadFile();	
-		}
-		#endregion
-		#region window resize
-		if(!oData.ignoreMinSize && (position.width<width_window_minimum)) {
-			MessageBox("Window is too small! Animator requires a width of at least "+width_window_minimum+" pixels to function correctly.",MessageBoxType.Warning);
-			GUILayout.BeginHorizontal();
-				if(GUILayout.Button("Ignore (Not Recommended)")) {
-					registerUndo("Ignore Min. Window Size");
-					oData.ignoreMinSize = true;
-					// save
-					EditorUtility.SetDirty(aData);
-					// repaint
-					this.Repaint();
-				}
-				if(GUILayout.Button("Resize")) {
-					registerUndo("Window Resize");
-					Rect rectDimensions = position;
-					rectDimensions.width = width_window_minimum+1f;
-					position = rectDimensions;
-					GUIUtility.ExitGUI();
-				}
 
-			GUILayout.EndHorizontal();
-			return;
-		}
 		#endregion
 		#region temporary variables
 		Rect rectWindow = new Rect(0f,0f,position.width,position.height);
@@ -584,7 +558,6 @@ public class AMTimeline : EditorWindow {
 		width_track = Mathf.Clamp(aData.width_track,width_track_min,position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-width_playback_controls-70f);
 		if(aData.width_track != width_track) aData.width_track = width_track;
 		
-		bool compact = ((oData.ignoreMinSize)&&(position.width<width_window_minimum)); // when true, display compact GUI
 		currentMousePosition = e.mousePosition;
 		bool clickedZoom = false;
 		#endregion
@@ -687,29 +660,31 @@ public class AMTimeline : EditorWindow {
 		//GUI.color = Color.white;
 		#region options button
 		Rect rectBtnOptions = new Rect(margin,0f,60f,height_button_delete);
-		if(GUI.Button(rectBtnOptions,"Options", EditorStyles.toolbarButton)) {
-			EditorWindow windowOptions = ScriptableObject.CreateInstance<AMOptions>();
-			//windowOptions.Show();
-			windowOptions.ShowUtility();
-			//EditorWindow.GetWindow (typeof (AMOptions));
+
+
+		GUIStyle styleBtnPlayOnStart = new GUIStyle(/*GUI.skin.GetStyle("ButtonImage")*/EditorStyles.toolbarButton);
+		if(time_numbering) {
+			styleBtnPlayOnStart.normal.background = styleBtnPlayOnStart.onNormal.background;
+			styleBtnPlayOnStart.hover.background = styleBtnPlayOnStart.onNormal.background;
 		}
+		if(GUI.Button(rectBtnOptions,new GUIContent(getSkinTextureStyleState("playonstart").background,"Show time instead of frame numbers"),styleBtnPlayOnStart)) {
+			if(!time_numbering) time_numbering = true;
+			else time_numbering = false;
+		}
+
+//		if(GUI.Button(rectBtnOptions,"Options", EditorStyles.toolbarButton)) {
+//			EditorWindow windowOptions = ScriptableObject.CreateInstance<AMOptions>();
+//			//windowOptions.Show();
+//			windowOptions.ShowUtility();
+//			//EditorWindow.GetWindow (typeof (AMOptions));
+//		}
 		if(rectBtnOptions.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
 		#endregion
-		#region code view button
-		Rect rectBtnCodeView = new Rect(rectBtnOptions.x+rectBtnOptions.width+margin,rectBtnOptions.y,80f,rectBtnOptions.height);
-		if(GUI.Button(rectBtnCodeView,"Code View", EditorStyles.toolbarButton)) {
-			EditorWindow.GetWindow (typeof (AMCodeView));
-		}
-		if(rectBtnCodeView.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-			mouseOverElement = (int)ElementType.Button;
-		}
-		#endregion
 		#region take popup, change take or create new take
-		Rect rectLabelCurrentTake = new Rect(rectBtnCodeView.x, rectBtnCodeView.y,rectBtnCodeView.width,rectBtnCodeView.height);
-		if(!compact) {
-			rectLabelCurrentTake = new Rect(rectBtnCodeView.x+rectBtnCodeView.width+margin,rectBtnCodeView.y,80f,rectBtnCodeView.height);
-			GUI.Label(rectLabelCurrentTake,"Current Take:",styleLabelMenu);
-		}
+		Rect rectLabelCurrentTake = new Rect(rectBtnOptions.x, rectBtnOptions.y,rectBtnOptions.width,rectBtnOptions.height);
+
+		GUI.Label(rectLabelCurrentTake,"Current Take:",styleLabelMenu);
+
 		Rect rectTakePopup = new Rect(rectLabelCurrentTake.x+rectLabelCurrentTake.width+margin,rectLabelCurrentTake.y/*+3f*/,width_take_popup,20f);
 		// if renaming take, show textfield
 		if(isRenamingTake) {
@@ -726,8 +701,6 @@ public class AMTimeline : EditorWindow {
 				// take changed
 				// destroy camera fade
 				if(AMCameraFade.hasInstance()) AMCameraFade.destroyImmediateInstance();
-				// reset code view dictionaries
-				AMCodeView.resetTrackDictionary();
 				// if not creating new take
 				if(aData.getCurrentTakeValue() != aData.takes.Count) {
 					// select current frame
@@ -759,7 +732,6 @@ public class AMTimeline : EditorWindow {
 			if((EditorUtility.DisplayDialog("Delete Take","Are you sure you want to delete take '"+aData.getCurrentTake().name+"'?","Delete","Cancel"))) {
 				registerUndo("Delete Take");
 				aData.deleteCurrentTake();
-				AMCodeView.resetTrackDictionary();
 				// save data
 				EditorUtility.SetDirty(aData);
 				setDirtyTakes(aData.takes);
@@ -786,31 +758,13 @@ public class AMTimeline : EditorWindow {
 			refreshGizmos();
 		}
 		#endregion
-		#region play on start button
-			Rect rectBtnPlayOnStart = new Rect(rectBtnDeleteTake.x+rectBtnDeleteTake.width+margin,rectBtnDeleteTake.y,width_button_delete,height_button_delete);
-			bool isPlayOnStart = aData.playOnStart == aData.getCurrentTake();
-			GUIStyle styleBtnPlayOnStart = new GUIStyle(/*GUI.skin.GetStyle("ButtonImage")*/EditorStyles.toolbarButton);
-			if(isPlayOnStart) {
-				styleBtnPlayOnStart.normal.background = styleBtnPlayOnStart.onNormal.background;
-				styleBtnPlayOnStart.hover.background = styleBtnPlayOnStart.onNormal.background;
-			}
-			if(GUI.Button(rectBtnPlayOnStart,new GUIContent(getSkinTextureStyleState("playonstart").background,"Play On Start"),styleBtnPlayOnStart)) {
-				if(!isPlayOnStart) aData.playOnStart = aData.getCurrentTake();
-				else aData.playOnStart = null;
-				EditorUtility.SetDirty(aData);
-			}
-		#endregion
 		#region settings
-		Rect rectLabelSettings = new Rect(rectBtnPlayOnStart.x+rectBtnPlayOnStart.width+margin,rectBtnPlayOnStart.y,200f,rectLabelCurrentTake.height);
+		Rect rectLabelSettings = new Rect(rectBtnDeleteTake.x+rectBtnDeleteTake.width+margin,rectBtnDeleteTake.y,200f,rectBtnDeleteTake.height);
 		
-		if(compact) {
-			rectLabelSettings.width = GUI.skin.label.CalcSize(new GUIContent("Settings")).x;
-			GUI.Label (rectLabelSettings,"Settings", styleLabelMenu);
-		} else {
-			string strSettings = "Settings: "+aData.getCurrentTake().numFrames+" Frames; "+aData.getCurrentTake().frameRate+" Fps";
-			rectLabelSettings.width = GUI.skin.label.CalcSize(new GUIContent(strSettings)).x;
-			GUI.Label (rectLabelSettings,strSettings,styleLabelMenu);
-		}
+		string strSettings = "Settings: "+aData.getCurrentTake().numFrames+" Frames; "+aData.getCurrentTake().frameRate+" Fps";
+		rectLabelSettings.width = GUI.skin.label.CalcSize(new GUIContent(strSettings)).x;
+		GUI.Label (rectLabelSettings,strSettings,styleLabelMenu);
+
 		Rect rectBtnModify = new Rect(rectLabelSettings.x+rectLabelSettings.width+margin,rectLabelSettings.y,60f,rectBtnOptions.height);
 		if(GUI.Button(rectBtnModify,"Modify",EditorStyles.toolbarButton)) {
 			EditorWindow windowSettings = ScriptableObject.CreateInstance<AMSettings>();
@@ -832,9 +786,7 @@ public class AMTimeline : EditorWindow {
 		
 		bool birdseye = (current_width_frame <= width_frame_birdseye_min ? true : false);
 		// show or hide zoom texture
-		if(position.width>788 || (compact)) {
-			GUI.DrawTexture(new Rect(position.width-25f,0f,20f,20f),getSkinTextureStyleState("zoom").background);
-		}
+		GUI.DrawTexture(new Rect(position.width-25f,0f,20f,20f),getSkinTextureStyleState("zoom").background);
 		#endregion
 		#endregion
 		#region control bar
@@ -941,7 +893,6 @@ public class AMTimeline : EditorWindow {
 						aData.getCurrentTake().selectedTrack = -1;
 						// deselect group
 						aData.getCurrentTake().selectedGroup = 0;
-						AMCodeView.refresh();
 					}
 				} else {
 					bool delete = true;
@@ -954,7 +905,6 @@ public class AMTimeline : EditorWindow {
 						if(delete) {
 							registerUndo("Delete Group");
 							aData.getCurrentTake().deleteSelectedGroup(deleteContents);
-							AMCodeView.refresh();
 						}
 					} else {
 						registerUndo("Delete Group");
@@ -1195,7 +1145,7 @@ public class AMTimeline : EditorWindow {
 		for(int i=firstMarkedKey;i<=(int)aData.getCurrentTake().endFrame;i+=key_dist) {
 				float newKeyNumberX = width_track+current_width_frame*(i-(int)aData.getCurrentTake().startFrame)-1f;
 				string key_number; 
-				if(oData.time_numbering) key_number = frameToTime(i,(float)aData.getCurrentTake().frameRate).ToString("N2");
+				if(time_numbering) key_number = frameToTime(i,(float)aData.getCurrentTake().frameRate).ToString("N2");
 				else key_number = i.ToString();
 				Rect rectKeyNumber = new Rect(newKeyNumberX,height_menu_bar,GUI.skin.label.CalcSize(new GUIContent(key_number)).x,height_control_bar);
 				bool didCutLabel = false;
@@ -1304,11 +1254,11 @@ public class AMTimeline : EditorWindow {
 		GUI.DrawTexture(new Rect(position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-8f,73f,48f,48f),texProperties);
 		#endregion
 		#region indicator
-		if((oData.showFramesForCollapsedTracks || isAnyTrackFoldedOut)&&(trackCount>0)) drawIndicator(aData.getCurrentTake().selectedFrame);
+		drawIndicator(aData.getCurrentTake().selectedFrame);
 		#endregion
 		#region horizontal scrollbar tooltip
-		string strHScrollbarLeftTooltip = (oData.time_numbering ? frameToTime((int)aData.getCurrentTake().startFrame,(float)aData.getCurrentTake().frameRate).ToString("N2") : aData.getCurrentTake().startFrame.ToString());
-		string strHScrollbarRightTooltip = (oData.time_numbering ? frameToTime((int)aData.getCurrentTake().endFrame,(float)aData.getCurrentTake().frameRate).ToString("N2") : aData.getCurrentTake().endFrame.ToString());
+		string strHScrollbarLeftTooltip = (time_numbering ? frameToTime((int)aData.getCurrentTake().startFrame,(float)aData.getCurrentTake().frameRate).ToString("N2") : aData.getCurrentTake().startFrame.ToString());
+		string strHScrollbarRightTooltip = (time_numbering ? frameToTime((int)aData.getCurrentTake().endFrame,(float)aData.getCurrentTake().frameRate).ToString("N2") : aData.getCurrentTake().endFrame.ToString());
 		GUIStyle styleLabelCenter = new GUIStyle(GUI.skin.label);
 		styleLabelCenter.alignment = TextAnchor.MiddleCenter;
 		Vector2 _label_size;
@@ -1416,7 +1366,7 @@ public class AMTimeline : EditorWindow {
 		#endregion
 		#region tooltip
 		
-		if(!oData.disableTimelineActions && !oData.disableTimelineActionsTooltip && dragType == (int)DragType.None && showTooltip && tooltip != "") {
+		if(dragType == (int)DragType.None && showTooltip && tooltip != "") {
 			Vector2 tooltipSize = GUI.skin.label.CalcSize(new GUIContent(tooltip));
 			tooltipSize.x += GUI.skin.button.padding.left + GUI.skin.button.padding.right;
 			tooltipSize.y += GUI.skin.button.padding.top + GUI.skin.button.padding.bottom;
@@ -1454,9 +1404,7 @@ public class AMTimeline : EditorWindow {
 		//repaintBuffer = repaintRefreshRate;
 		
 		// reload AnimatorData for other windows
-		if(AMOptions.window) AMOptions.window.reloadAnimatorData();
 		if(AMSettings.window) AMSettings.window.reloadAnimatorData();
-		if(AMCodeView.window) AMCodeView.window.reloadAnimatorData();
 		if(AMEasePicker.window) AMEasePicker.window.reloadAnimatorData();
 		if(AMPropertySelect.window) AMPropertySelect.window.reloadAnimatorData();
 		if(AMTakeExport.window) AMTakeExport.window.reloadAnimatorData();
@@ -1522,15 +1470,13 @@ public class AMTimeline : EditorWindow {
 		
 		EditorGUILayout.HelpBox(message,messageType);
 	}	
-	public static void loadSkin(AMOptionsFile oData, ref GUISkin _skin, ref string skinName, Rect position) {		
-		if(_skin == null || skinName == null || skinName != oData.skin/*global_skin*/) {
-			//
-			_skin = (GUISkin) Resources.Load(oData.skin/*global_skin*/);
-			skinName = oData.skin/*global_skin*/;
+	public static void loadSkin(Rect position) {
+		if(_skin == null) {
+			_skin = (GUISkin) Resources.Load(global_skin);
 		}
 		GUI.skin = _skin;
-		GUI.color = GUI.skin.window.normal.textColor;
-		GUI.DrawTexture(new Rect(0f,0f,position.width,position.height),EditorGUIUtility.whiteTexture);
+//		GUI.color = GUI.skin.window.normal.textColor;
+//		GUI.DrawTexture(new Rect(0f,0f,position.width,position.height),EditorGUIUtility.whiteTexture);
 		GUI.color = Color.white;
 	}	
 	public static GUIStyleState getSkinTextureStyleState(string name) {
@@ -1874,10 +1820,7 @@ public class AMTimeline : EditorWindow {
 		int t = _track.id;
 		int selectedTrack = aData.getCurrentTake().selectedTrack;
 		// frames start
-		if(!_track.foldout && !oData.showFramesForCollapsedTracks) {
-			track_y += height_track_foldin;
-			return;
-		}
+
 		float numFrames = (aData.getCurrentTake().numFrames < numFramesToRender ? aData.getCurrentTake().numFrames : numFramesToRender);
 		Rect rectFrames = new Rect(width_track,track_y,current_width_frame*numFrames,height_track);
 		if(!_track.foldout) track_y += height_track_foldin;
@@ -2051,7 +1994,7 @@ public class AMTimeline : EditorWindow {
 				mouseOverSelectedFrame = ((isTrackSelected) && aData.getCurrentTake().isFrameSelected(mouseXOverFrame));
 		}
 		#endregion
-		if(!oData.disableTimelineActions && _track.foldout) {
+		if( _track.foldout) {
 			#region timeline actions
 			//AudioClip audioClip = null;
 			bool drawEachAction = false;
@@ -2323,7 +2266,7 @@ public class AMTimeline : EditorWindow {
 			GUIStyle styleLabelWordwrap = new GUIStyle(GUI.skin.label);
 			styleLabelWordwrap.wordWrap = true;
 			string strFrameInfo = track_name;
-			if(oData.time_numbering) strFrameInfo += "Time "+frameToTime(_frame,(float)aData.getCurrentTake().frameRate).ToString("N2")+" s";
+			if(time_numbering) strFrameInfo += "Time "+frameToTime(_frame,(float)aData.getCurrentTake().frameRate).ToString("N2")+" s";
 			else strFrameInfo += "Frame "+_frame;
 			GUI.Label (new Rect(0f,0f,width_inspector_open-width_inspector_closed-width_button_delete-margin,20f),strFrameInfo,styleLabelWordwrap);
 			Rect rectBtnDeleteKey = new Rect(width_inspector_open-width_inspector_closed-width_button_delete-margin,0f,width_button_delete,height_button_delete);
@@ -2352,7 +2295,6 @@ public class AMTimeline : EditorWindow {
 				Rect rectSelGrid = new Rect(rectLabelInterp.x+rectLabelInterp.width+margin,rectLabelInterp.y,width_inspector-rectLabelInterp.width-margin*2f,rectLabelInterp.height);
 				if(tKey.setInterpolation(GUI.SelectionGrid(rectSelGrid,tKey.interp,texInterpl,2,GUI.skin.GetStyle("ButtonImage")))) {
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// select the current frame
 					timelineSelectFrame(aData.getCurrentTake().selectedTrack,aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2366,7 +2308,6 @@ public class AMTimeline : EditorWindow {
 			if(tKey.setPosition(EditorGUI.Vector3Field(rectPosition,"Position",tKey.position))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// preview new position
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data
@@ -2398,7 +2339,6 @@ public class AMTimeline : EditorWindow {
 			if(rKey.setRotationQuaternion(EditorGUI.Vector4Field(rectQuaternion,"Quaternion",rKey.getRotationQuaternion()))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// preview new position
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data
@@ -2427,7 +2367,6 @@ public class AMTimeline : EditorWindow {
 			if(oKey.setTarget((Transform)EditorGUI.ObjectField(rectObjectTarget,oKey.target,typeof(Transform),true))) {
 				// update cache when modifying varaibles
 				(sTrack as AMOrientationTrack).updateCache();
-				AMCodeView.refresh();
 				// preview
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data
@@ -2464,7 +2403,6 @@ public class AMTimeline : EditorWindow {
 			if(aKey.setAmClip((AnimationClip)EditorGUI.ObjectField(rectObjectField,aKey.amClip,typeof(AnimationClip),false))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// preview new position
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data
@@ -2480,7 +2418,6 @@ public class AMTimeline : EditorWindow {
 			if(aKey.setWrapMode(indexToWrapMode(EditorGUI.Popup(rectPopupWrapMode,wrapModeToIndex(aKey.wrapMode),wrapModeNames)))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// preview new position
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data
@@ -2496,7 +2433,6 @@ public class AMTimeline : EditorWindow {
 			if(aKey.setCrossFade(EditorGUI.Toggle(rectToggleCrossfade,aKey.crossfade))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// preview new position
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data
@@ -2512,7 +2448,6 @@ public class AMTimeline : EditorWindow {
 			if(aKey.setCrossfadeTime(EditorGUI.FloatField(rectFloatFieldCrossFade,aKey.crossfadeTime))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// save data
 				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
 				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
@@ -2534,7 +2469,6 @@ public class AMTimeline : EditorWindow {
 			if(auKey.setAudioClip((AudioClip)EditorGUI.ObjectField(rectObjectField,auKey.audioClip,typeof(AudioClip),false))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// save data
 				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
 				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
@@ -2549,7 +2483,6 @@ public class AMTimeline : EditorWindow {
 			if(auKey.setLoop(EditorGUI.Toggle(rectToggleLoop,auKey.loop))) {
 				// update cache when modifying varaibles
 				sTrack.updateCache();
-				AMCodeView.refresh();
 				// save data
 				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
 				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
@@ -2624,7 +2557,6 @@ public class AMTimeline : EditorWindow {
 						if(pKey.setValueMegaMorph(megaMorphChannels)) {
 							// update cache when modifying varaibles
 							sTrack.updateCache();
-							AMCodeView.refresh();
 							// preview new value
 							aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 							// save data
@@ -2640,7 +2572,6 @@ public class AMTimeline : EditorWindow {
 				if(pKey.setValue(EditorGUI.IntField(rectField,propertyLabel,Convert.ToInt32(pKey.val)))) {
 					// update cache when modifying varaibles
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// preview new value
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2653,7 +2584,6 @@ public class AMTimeline : EditorWindow {
 				if(pKey.setValue(EditorGUI.FloatField(rectField,propertyLabel,(float)(pKey.val)))) {
 					// update cache when modifying varaibles
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// preview new value
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2667,7 +2597,6 @@ public class AMTimeline : EditorWindow {
 				if(pKey.setValue(EditorGUI.Vector2Field(rectField,propertyLabel,pKey.vect2))) {
 					// update cache when modifying varaibles
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// preview new value
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2681,7 +2610,6 @@ public class AMTimeline : EditorWindow {
 				if(pKey.setValue(EditorGUI.Vector3Field(rectField,propertyLabel,pKey.vect3))) {
 					// update cache when modifying varaibles
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// preview new value
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2695,7 +2623,6 @@ public class AMTimeline : EditorWindow {
 				if(pKey.setValue(EditorGUI.ColorField(rectField,propertyLabel,pKey.color))) {
 					// update cache when modifying varaibles
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// preview new value
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2709,7 +2636,6 @@ public class AMTimeline : EditorWindow {
 				if(pKey.setValue(EditorGUI.RectField(rectField,propertyLabel,pKey.rect))) {
 					// update cache when modifying varaibles
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// preview new value
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2747,7 +2673,6 @@ public class AMTimeline : EditorWindow {
 					// process change
 					if(eKey.setMethodInfo(cachedMethodInfoComponents[indexMethodInfo],cachedMethodInfo[indexMethodInfo],cachedParameterInfos)) {						// update cache when modifying varaibles
 						sTrack.updateCache();
-						AMCodeView.refresh();
 						// save data
 						setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
 						setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
@@ -2759,7 +2684,6 @@ public class AMTimeline : EditorWindow {
 					// if method has more than 1 parameter, set sendmessage to false, and disable toggle
 					if(eKey.setUseSendMessage(false)) {
 						sTrack.updateCache();
-						AMCodeView.refresh();
 						// save data
 						setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
 						setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
@@ -2793,7 +2717,6 @@ public class AMTimeline : EditorWindow {
 				Rect rectToggleSendMessage = new Rect(rectLabelSendMessage.x+rectLabelSendMessage.width+margin,rectLabelSendMessage.y,20f,20f);
 				if(eKey.setUseSendMessage(GUI.Toggle(rectToggleSendMessage,eKey.useSendMessage,""))) {
 					sTrack.updateCache();
-					AMCodeView.refresh();
 					// save data
 					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
 					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
@@ -2820,7 +2743,6 @@ public class AMTimeline : EditorWindow {
 						float height_field = 0f;
 						if(showFieldFor(rectField, i.ToString(),cachedParameterInfos[i].Name,eKey.parameters[i],cachedParameterInfos[i].ParameterType, 0, ref height_field)) {
 							sTrack.updateCache();
-							AMCodeView.refresh();
 							// save data
 							setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
 							setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
@@ -2854,7 +2776,6 @@ public class AMTimeline : EditorWindow {
 			if(cKey.setType(GUI.SelectionGrid(rectSelGridType,cKey.type,new string[]{"Camera", "Color"},2))) {
 				// update cache when modifying varaibles
 					(sTrack as AMCameraSwitcherTrack).updateCache();
-					AMCodeView.refresh();
 					// preview
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2871,7 +2792,6 @@ public class AMTimeline : EditorWindow {
 				if(cKey.setCamera((Camera)EditorGUI.ObjectField(rectCameraColor,cKey.camera,typeof(Camera),true))) {
 					// update cache when modifying varaibles
 					(sTrack as AMCameraSwitcherTrack).updateCache();
-					AMCodeView.refresh();
 					// preview
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2884,7 +2804,6 @@ public class AMTimeline : EditorWindow {
 				if(cKey.setColor(EditorGUI.ColorField(rectCameraColor,cKey.color))) {
 					// update cache when modifying varaibles
 					(sTrack as AMCameraSwitcherTrack).updateCache();
-					AMCodeView.refresh();
 					// preview
 					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 					// save data
@@ -2911,7 +2830,6 @@ public class AMTimeline : EditorWindow {
 					if(cKey.setStill(!GUI.Toggle(rectToggleRenderTexture,!cKey.still,""))) {
 						// update cache when modifying varaibles
 						(sTrack as AMCameraSwitcherTrack).updateCache();
-						AMCodeView.refresh();
 						// preview
 						aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 						// save data
@@ -3038,18 +2956,15 @@ public class AMTimeline : EditorWindow {
 			Rect rectLabelField = new Rect(rect);
 			GUI.Label(rectLabelField, name);
 			// GameObject field
-			GUI.skin = null;
 			EditorGUIUtility.LookLikeControls();
 			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
 			if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(GameObject),true))) saveChanges = true;
-			GUI.skin = skin;
 			EditorGUIUtility.LookLikeControls();
 		}else if(t.BaseType == typeof(Behaviour) || t.BaseType == typeof(Component)) {
 			height_field += 40f+margin;
 			// label
 			Rect rectLabelField = new Rect(rect);
 			GUI.Label(rectLabelField, name);
-			GUI.skin = null;
 			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
 			EditorGUIUtility.LookLikeControls();
 			// field
@@ -3112,7 +3027,6 @@ public class AMTimeline : EditorWindow {
 				else { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Component),true))) saveChanges = true; }
 				
 			}
-			GUI.skin = skin;
 			EditorGUIUtility.LookLikeControls();
 			//return;
 		}else if(t == typeof(UnityEngine.Object)) {
@@ -3120,20 +3034,15 @@ public class AMTimeline : EditorWindow {
 			Rect rectLabelField = new Rect(rect);
 			GUI.Label(rectLabelField, name);
 			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
-			GUI.skin = null;
 			EditorGUIUtility.LookLikeControls();
 			if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(UnityEngine.Object),true))) saveChanges = true;
-			GUI.skin = skin;
 			EditorGUIUtility.LookLikeControls();
 		} else if(t == typeof(Component)) {
 			Rect rectLabelField = new Rect(rect);
 			GUI.Label(rectLabelField, name);
 			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
-			GUI.skin = null;
-			GUI.skin = null;
 			EditorGUIUtility.LookLikeControls();
 			if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Component),true))) saveChanges = true;
-			GUI.skin = skin;
 			EditorGUIUtility.LookLikeControls();
 		}else {
 			height_field += 20f;
@@ -3147,7 +3056,6 @@ public class AMTimeline : EditorWindow {
 	void showObjectFieldFor(AMTrack amTrack, float width_track, Rect rect) {
 		if(rect.width < 22f) return;
 		// show object field for track, used in OnGUI. Needs to be updated for every track type.
-		GUI.skin = null;
 		EditorGUIUtility.LookLikeControls();
 		// add objectfield for every track type
 		// translation
@@ -3162,7 +3070,6 @@ public class AMTimeline : EditorWindow {
 		else if(amTrack is AMOrientationTrack) {
 			if((amTrack as AMOrientationTrack).setObject((Transform)EditorGUI.ObjectField(rect,(amTrack as AMOrientationTrack).obj,typeof(Transform),true))) {
 				amTrack.updateCache();
-				AMCodeView.refresh();
 			}
 		}
 		// animation
@@ -3200,7 +3107,6 @@ public class AMTimeline : EditorWindow {
 					if (amTrack.keys.Count > 0) {
 						amTrack.deleteAllKeys();
 						amTrack.updateCache();
-						AMCodeView.refresh();
 					}
 					(amTrack as AMPropertyTrack).setObject(propertyGameObject);
 				}
@@ -3221,7 +3127,6 @@ public class AMTimeline : EditorWindow {
 					if (amTrack.keys.Count > 0) {
 						amTrack.deleteAllKeys();
 						amTrack.updateCache();
-						AMCodeView.refresh();
 					}
 					(amTrack as AMEventTrack).setObject(eventGameObject);
 				}
@@ -3230,7 +3135,6 @@ public class AMTimeline : EditorWindow {
 			// do nothing
 			//GUILayout.Space(width_track-padding_track*2);
 		}
-		GUI.skin = skin;
 		EditorGUIUtility.LookLikeControls();
 	}
 	void showAlertMissingObjectType(string type) {
@@ -3264,7 +3168,6 @@ public class AMTimeline : EditorWindow {
 				// refresh values
 				AMTransitionPicker.refreshValues();
 				// refresh code view
-				AMCodeView.refresh();
 			}
 			Rect rectButton = new Rect(width-width_button_delete+1f,y,width_button_delete,width_button_delete);
 			if(GUI.Button(rectButton, getSkinTextureStyleState("popup").background,GUI.skin.GetStyle("ButtonImage"))) {
@@ -3298,8 +3201,6 @@ public class AMTimeline : EditorWindow {
 						aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 						// refresh values
 						AMTransitionPicker.refreshValues();
-						// refresh code view
-						AMCodeView.refresh();
 					}
 			
 				GUILayout.EndVertical();
@@ -3322,7 +3223,6 @@ public class AMTimeline : EditorWindow {
 			if(key.setEaseType(EditorGUI.Popup(rectPopup,key.easeType,easeTypeNames))) {
 				// update cache when modifying varaibles
 				track.updateCache();
-				AMCodeView.refresh();
 				// preview new position
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data
@@ -3348,7 +3248,6 @@ public class AMTimeline : EditorWindow {
 					if(key.setEaseType(EditorGUILayout.Popup(key.easeType,easeTypeNames))) {
 						// update cache when modifying varaibles
 						track.updateCache();
-						AMCodeView.refresh();
 						// preview new position
 						aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 						// save data
@@ -3510,7 +3409,6 @@ public class AMTimeline : EditorWindow {
 				checkForOutOfBoundsFramesOnSelectedTrack();
 				// preview selected frame
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				AMCodeView.refresh();
 			// if finished context selection
 			} else if(dragType == (int)DragType.ContextSelection) {
 				contextSelectFrameRange(startDragFrame,endDragFrame);
@@ -3620,7 +3518,6 @@ public class AMTimeline : EditorWindow {
 								}
 								// update cache
 								selTrack.updateCache();
-								AMCodeView.refresh();
 							}
 							
 						}
@@ -3789,7 +3686,7 @@ public class AMTimeline : EditorWindow {
 		if(window) window.cachedZoom = -1f;
 	}
 	void calculateNumFramesToRender(bool clickedZoom, Event e) {
-		int min = Mathf.FloorToInt((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/(oData.disableTimelineActions ? height_track/2f : height_track-height_action_min));
+		int min = Mathf.FloorToInt((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/(height_track-height_action_min));
 		int _mouseXOverFrame =(int) aData.getCurrentTake().startFrame+Mathf.CeilToInt((e.mousePosition.x-width_track)/current_width_frame)-1;
 		// move frames with hand cursor
 		if(dragType == (int)DragType.CursorHand && !justStartedHandGrab) {
@@ -3809,15 +3706,14 @@ public class AMTimeline : EditorWindow {
 		// calculate the number of frames to render based on zoom
 		}else if(aData.zoom != cachedZoom && dragType != (int)DragType.ResizeHScrollbarLeft && dragType != (int)DragType.ResizeHScrollbarRight) {
 			//numFramesToRender
-			if(oData.scrubby_zoom_slider) numFramesToRender = AMTween.linear(0f,1f,aData.zoom)*((float)aData.getCurrentTake().numFrames-min)+min;
-			else numFramesToRender = AMTween.easeInExpo(0f,1f,aData.zoom)*((float)aData.getCurrentTake().numFrames-min)+min;
+			numFramesToRender = AMTween.easeInExpo(0f,1f,aData.zoom)*((float)aData.getCurrentTake().numFrames-min)+min;
 			// frame dimensions
-			current_width_frame = Mathf.Clamp((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/numFramesToRender,0f,(oData.disableTimelineActions ? height_track/2f : height_track-height_action_min));
-			current_height_frame = Mathf.Clamp(current_width_frame*2f,20f,(oData.disableTimelineActions ? height_track : 40f));
+			current_width_frame = Mathf.Clamp((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/numFramesToRender,0f,(height_track-height_action_min));
+			current_height_frame = Mathf.Clamp(current_width_frame*2f,20f,40f);
 			float half = 0f;
 			// zoom out			
 			if(aData.getCurrentTake().endFrame-aData.getCurrentTake().startFrame+1 < Mathf.FloorToInt(numFramesToRender)) {
-				if((oData.scrubby_zoom_cursor && dragType == (int)DragType.CursorZoom) /*|| (aData.scrubby_zoom_slider && dragType != (int)DragType.CursorZoom)*/) {
+				if(dragType == (int)DragType.CursorZoom) {
 					int newPosFrame = (int)aData.getCurrentTake().startFrame+Mathf.CeilToInt((startZoomMousePosition.x-width_track)/current_width_frame)-1;
 					int _diff = startZoomXOverFrame - newPosFrame;
 					aData.getCurrentTake().startFrame += _diff;
@@ -3850,7 +3746,7 @@ public class AMTimeline : EditorWindow {
 					aData.getCurrentTake().startFrame += _diff;
 					aData.getCurrentTake().endFrame += _diff;
 				// scrubby zoom in
-				} else if((oData.scrubby_zoom_cursor && dragType == (int)DragType.CursorZoom) || (oData.scrubby_zoom_slider && dragType != (int)DragType.CursorZoom)) {
+				} else if(dragType == (int)DragType.CursorZoom) {
 					if(dragType != (int)DragType.CursorZoom) {
 						// scrubby zoom slider to indicator
 						targetFrame = aData.getCurrentTake().selectedFrame;
@@ -3890,11 +3786,10 @@ public class AMTimeline : EditorWindow {
 		if(aData.getCurrentTake().endFrame > aData.getCurrentTake().numFrames) aData.getCurrentTake().endFrame = aData.getCurrentTake().numFrames;
 		if(aData.getCurrentTake().startFrame > aData.getCurrentTake().endFrame-min) aData.getCurrentTake().startFrame = aData.getCurrentTake().endFrame-min;
 		numFramesToRender = aData.getCurrentTake().endFrame-aData.getCurrentTake().startFrame+1;
-		current_width_frame = Mathf.Clamp((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/numFramesToRender,0f,(oData.disableTimelineActions ? height_track/2f : height_track-height_action_min));
-		current_height_frame = Mathf.Clamp(current_width_frame*2f,20f,(oData.disableTimelineActions ? height_track : 40f));
+		current_width_frame = Mathf.Clamp((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/numFramesToRender,0f,(height_track-height_action_min));
+		current_height_frame = Mathf.Clamp(current_width_frame*2f,20f,40f);
 		if(dragType == (int)DragType.ResizeHScrollbarLeft || dragType == (int)DragType.ResizeHScrollbarRight) {
-			if(oData.scrubby_zoom_slider) aData.zoom = AMTween.linear(0f,1f,(numFramesToRender-min)/((float)aData.getCurrentTake().numFrames-min));
-			else aData.zoom = AMTween.easeInExpoReveresed(0f,1f,(numFramesToRender-min)/((float)aData.getCurrentTake().numFrames-min));
+			aData.zoom = AMTween.easeInExpoReveresed(0f,1f,(numFramesToRender-min)/((float)aData.getCurrentTake().numFrames-min));
 			cachedZoom = aData.zoom;
 		}
 	}
@@ -4196,7 +4091,6 @@ public class AMTimeline : EditorWindow {
 		oKey.setTarget(target.transform);
 		// update cache
 		sTrack.updateCache();
-		AMCodeView.refresh();
 		// preview new frame
 		aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 		// save data
@@ -4225,7 +4119,6 @@ public class AMTimeline : EditorWindow {
 		timelineSelectTrack(aData.getCurrentTake().track_count);
 		// move scrollview to last created track
 		setScrollViewValue(aData.getCurrentTake().getElementY(aData.getCurrentTake().selectedTrack,height_track,height_track_foldin,height_group));
-		AMCodeView.refresh();
 	}
 	
 	void addTrackWithGameObject(object trackType, GameObject object_window) {
@@ -4266,14 +4159,6 @@ public class AMTimeline : EditorWindow {
 				}
 				break;
 			default:
-				int combo_index = (int)trackType-100;
-				if(combo_index >= oData.quickAdd_Combos.Count) {
-					Debug.LogError ("Animator: Track type '"+(int)trackType+"' not found.");
-				} else {
-					foreach(int _etrack in oData.quickAdd_Combos[combo_index]) {
-						addTrackWithGameObject((int)_etrack, object_window);
-					}
-				}
 				break;
 		}	
 	}
@@ -4403,13 +4288,11 @@ public class AMTimeline : EditorWindow {
 			// add key to camera switcher
 			(amTrack as AMCameraSwitcherTrack).addKey (_frame, null, _cKey);
 		}
-		AMCodeView.refresh();
 	}
 	void deleteKeyFromSelectedFrame() {
 		registerUndo("Clear Frame");
 		aData.getCurrentTake().getSelectedTrack().deleteKeyOnFrame(aData.getCurrentTake().selectedFrame);
 		aData.getCurrentTake().getSelectedTrack().updateCache();
-		AMCodeView.refresh();
 		// save data
 		setDirtyKeys(aData.getCurrentTake().getSelectedTrack());
 		setDirtyCache (aData.getCurrentTake().getSelectedTrack());
@@ -4417,7 +4300,6 @@ public class AMTimeline : EditorWindow {
 		timelineSelectFrame(aData.getCurrentTake().selectedTrack,aData.getCurrentTake().selectedFrame);
 		// refresh gizmos
 		refreshGizmos();	
-		AMCodeView.refresh();
 	}
 	void deleteSelectedKeys(bool showWarning) {
 		registerUndo("Clear Frames");
@@ -4442,7 +4324,6 @@ public class AMTimeline : EditorWindow {
 		timelineSelectFrame(aData.getCurrentTake().selectedTrack,aData.getCurrentTake().selectedFrame,false);
 		// refresh gizmos
 		refreshGizmos();
-		AMCodeView.refresh();
 	}
 	
 	#endregion
@@ -4510,22 +4391,6 @@ public class AMTimeline : EditorWindow {
 		// Camera Switcher
 		if(hasCamera) menu_drag.AddItem(new GUIContent("Camera Switcher"+(aData.getCurrentTake().cameraSwitcher != null ? " (Key)" : "")),false,addTrackFromMenu,(int)Track.CameraSwitcher);
 		else menu_drag.AddDisabledItem(new GUIContent("Camera Switcher"+(aData.getCurrentTake().cameraSwitcher != null ? " (Key)" : "")));
-		
-		if(oData.quickAdd_Combos.Count > 0) {
-			// multiple tracks
-			menu_drag.AddSeparator("");
-			foreach(List<int> combo in oData.quickAdd_Combos) {
-				string combo_name = "";
-				for(int i=0; i<combo.Count;i++) {
-					//combo_name += Enum.GetName(typeof(Track),combo[i])+" ";
-					combo_name += TrackNames[combo[i]]+" "+(combo[i] == (int)Track.CameraSwitcher && aData.getCurrentTake().cameraSwitcher ? "(Key) " : "");
-					if(i<combo.Count-1) combo_name += "+ ";
-				}
-				if(canQuickAddCombo(combo, hasTransform,hasAnimation,hasAudioSource,hasCamera)) menu_drag.AddItem(new GUIContent(combo_name),false,addTrackFromMenu,100+oData.quickAdd_Combos.IndexOf(combo));
-				else menu_drag.AddDisabledItem(new GUIContent(combo_name));
-			}
-		}
-		
 	}
 	bool canQuickAddCombo(List<int> combo, bool hasTransform, bool hasAnimation, bool hasAudioSource, bool hasCamera) {
 		foreach(int _track in combo) {
@@ -4654,7 +4519,6 @@ public class AMTimeline : EditorWindow {
 				contextSelectionTracksBuffer[i].updateCache();
 			}
 		}
-		AMCodeView.refresh();
 		// clear buffer
 		contextSelectionKeysBuffer = new List<List<AMKey>>();
 		contextSelectionTracksBuffer = new List<AMTrack>();

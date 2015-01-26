@@ -6,7 +6,6 @@ using System.Reflection;
 using System;
 
 public class AMPropertySelect : EditorWindow {
-	public AMOptionsFile oData;
 	public AnimatorData aData;
 	
 	public static AMPropertySelect window = null;
@@ -28,7 +27,6 @@ public class AMPropertySelect : EditorWindow {
 		this.title = "Property";
 		this.minSize = new Vector2(273f,102f);
 		this.wantsMouseMove = true;
-		oData = AMOptionsFile.loadFile();
 		loadAnimatorData();
 		scrollView = new Vector2(0f,0f);
 		// define styles		
@@ -61,7 +59,7 @@ public class AMPropertySelect : EditorWindow {
 	}
 	void OnGUI() {
 		
-		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
+//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		if(!aData) {
 			AMTimeline.MessageBox("Animator requires an AnimatorData component in your scene. Launch Animator to add the component.",AMTimeline.MessageBoxType.Warning);
 			return;
@@ -237,7 +235,6 @@ public class AMPropertySelect : EditorWindow {
 			// delete keys
 			if(track.keys.Count > 0) {
 				track.deleteAllKeys();
-				AMCodeView.refresh();
 			}
 			// set fieldinfo or propertyinfo
 			if(fieldInfo != null) 

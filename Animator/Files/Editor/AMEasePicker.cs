@@ -14,7 +14,6 @@ public class AMEasePicker : EditorWindow {
 	public static int selectedIndex;
 	public static int selectedSpeedIndex = 0;
 	public static int category = 0;
-	private AMOptionsFile oData = null;
 	private AnimationCurve curve = new AnimationCurve();
 	private AnimationCurve selectedCurve = new AnimationCurve();
 	private bool isCustomEase = false;
@@ -54,7 +53,6 @@ public class AMEasePicker : EditorWindow {
 		this.minSize = this.maxSize;
 		this.wantsMouseMove = true;
 		loadAnimatorData();
-		oData = AMOptionsFile.loadFile();
 		setupFilteredCategories();
 		selectedIndex = getCategoryIndexForEase(key.easeType);
 		if(selectedIndex < 0) {
@@ -134,8 +132,8 @@ public class AMEasePicker : EditorWindow {
 	
 	void OnGUI() {
 		
-		this.title = "Ease: "+(oData.time_numbering ? AMTimeline.frameToTime(key.frame,(float)aData.getCurrentTake().frameRate)+" s" : key.frame.ToString());
-		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
+		this.title = "Ease";
+//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		bool updateEasingCurve = false;
 		
 		GUIStyle styleBox = new GUIStyle(GUI.skin.button);
@@ -195,7 +193,6 @@ public class AMEasePicker : EditorWindow {
 					if(shouldUpdateCache) {
 						// update cache when modifying varaibles
 						track.updateCache();
-						AMCodeView.refresh();
 						// preview new position
 						aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 						// save data

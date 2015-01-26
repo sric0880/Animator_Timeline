@@ -44,7 +44,6 @@ public class AMTransitionPicker : EditorWindow {
 	private const float y_preview_texture = 48f;
 	// other variables
 	public AnimatorData aData = null;
-	private AMOptionsFile oData = null;
 	public bool isPlaying = true;
 	public enum DragType {
 		None = -1,
@@ -78,7 +77,6 @@ public class AMTransitionPicker : EditorWindow {
 		setWindowSize();
 		this.wantsMouseMove = true;
 		loadAnimatorData();
-		oData = AMOptionsFile.loadFile();
 		// set up here
 		transitionNames = new List<string>(AMTween.TransitionNames);
 	}
@@ -108,9 +106,9 @@ public class AMTransitionPicker : EditorWindow {
 	
 	void OnGUI() {
 		setWindowSize();
-		this.title = "Fade: "+(oData.time_numbering ? AMTimeline.frameToTime(key.frame,(float)aData.getCurrentTake().frameRate)+" s" : key.frame.ToString());
+		this.title = "Fade";
 		// load skin
-		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
+//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		EditorGUIUtility.LookLikeControls();
 		#region drag logic
 		Event e = Event.current;
@@ -380,7 +378,6 @@ public class AMTransitionPicker : EditorWindow {
 				key.irisShape = irisShape;
 				// update cache when modifying varaibles
 				track.updateCache();
-				AMCodeView.refresh();
 				// preview frame
 				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 				// save data

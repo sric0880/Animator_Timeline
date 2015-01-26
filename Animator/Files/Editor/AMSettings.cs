@@ -5,7 +5,6 @@ using System.Collections;
 public class AMSettings : EditorWindow {
 	public static AMSettings window = null;
 	
-	public AMOptionsFile oData;
 	public AnimatorData aData;	
 	
 	private int numFrames;
@@ -21,7 +20,6 @@ public class AMSettings : EditorWindow {
 		this.minSize = new Vector2(125f,115f);
 		this.maxSize = this.minSize;
 		
-		oData = AMOptionsFile.loadFile();
 		loadAnimatorData();
 
 	}
@@ -52,7 +50,7 @@ public class AMSettings : EditorWindow {
 		}
 	}
 	void OnGUI() {		
-		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
+//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		if(!aData) {
 			AMTimeline.MessageBox("Animator requires an AnimatorData component in your scene. Launch Animator to add the component.",AMTimeline.MessageBoxType.Warning);
 			return;
