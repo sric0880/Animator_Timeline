@@ -155,29 +155,19 @@ public class AMTimeline : EditorWindow {
 	// dimensions
 	private float margin = 2f;
 	private float padding_track = 3f;
-	private float width_track = 150f;
-	private float width_track_min = 135f;
+	private float width_track = 180f;
+	private float width_track_min = 160f;
 	private float height_track = 58f;
 	private float height_track_foldin = 20f;
 	private float height_action_min = 45f;
-	//private float width_frame = 30f;
-	//private float height_frame = 60f;
-	private float width_inspector_open = 250f;
-	private float width_inspector_closed = 40f;
-	private float width_take_popup = 200f;
 	private float height_menu_bar = /*30f*/20f;
-	private float height_control_bar = 20f;
-	private float width_playback_speed = 43f;
-	private float width_playback_controls = 245f;
-	private float height_playback_controls = 22f;
 	private float height_indicator_offset_y = 33f;		// indicator vertical offset
 	private float width_indicator_line = 3f;
 	private float width_indicator_head = 11f;
 	private float height_indicator_head = 12f;
 	private float height_indicator_footer = 20f;
-	public static float width_button_delete = 22f;
-	private float height_button_delete = 22f;
-	private float height_inspector_space = 6f;
+	private float width_button = 22f;
+	private float height_button = 22f;
 	private float height_group = 20f;
 	private float height_element_position = 2f;
 	private float width_subtrack_space = 15f;
@@ -194,11 +184,8 @@ public class AMTimeline : EditorWindow {
 	private Texture tex_cursor_zoom_blank = (Texture)Resources.Load ("am_cursor_zoom_blank");
 	private Texture tex_cursor_zoom = null;
 	private Texture tex_cursor_grab = (Texture)Resources.Load ("am_cursor_grab");
-	private Texture tex_icon_track = (Texture)Resources.Load ("am_icon_track");
-	private Texture tex_icon_track_hover = (Texture)Resources.Load ("am_icon_track_hover");
 	private Texture tex_icon_group_closed = (Texture)Resources.Load ("am_icon_group_closed");
 	private Texture tex_icon_group_open = (Texture)Resources.Load ("am_icon_group_open");
-	private Texture tex_icon_group_hover = (Texture)Resources.Load ("am_icon_group_hover");
 	private Texture tex_element_position = (Texture)Resources.Load ("am_element_position");
 	private Texture texFrKey = (Texture)Resources.Load("am_key");
 	private Texture texFrSet = (Texture)Resources.Load("am_frame_set");
@@ -210,10 +197,10 @@ public class AMTimeline : EditorWindow {
 	private Texture texKeyBirdsEye = (Texture)Resources.Load("am_key_birdseye"); 
 	private Texture texIndLine = (Texture)Resources.Load("am_indicator_line");
 	private Texture texIndHead = (Texture)Resources.Load("am_indicator_head");
-	private Texture texProperties = (Texture)Resources.Load("am_information");	
-	private Texture texRightArrow = (Texture)Resources.Load("am_nav_right");// inspector right arrow
-	private Texture texLeftArrow = (Texture)Resources.Load("am_nav_left");	// inspector left arrow
-	private Texture[] texInterpl = {(Texture)Resources.Load("am_interpl_curve"),(Texture)Resources.Load("am_interpl_linear")};
+//	private Texture texProperties = (Texture)Resources.Load("am_information");	
+//	private Texture texRightArrow = (Texture)Resources.Load("am_nav_right");// inspector right arrow
+//	private Texture texLeftArrow = (Texture)Resources.Load("am_nav_left");	// inspector left arrow
+
 	private Texture texBoxBorder = (Texture)Resources.Load("am_box_border");
 	private Texture texBoxRed = (Texture)Resources.Load("am_box_red");
 	//private Texture texBoxBlue = (Texture)Resources.Load("am_box_blue");
@@ -555,7 +542,7 @@ public class AMTimeline : EditorWindow {
 		if(dragType == (int)DragType.ResizeTrack) {
 			aData.width_track = startResize_width_track + e.mousePosition.x-startScrubMousePosition.x;
 		}
-		width_track = Mathf.Clamp(aData.width_track,width_track_min,position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-width_playback_controls-70f);
+		width_track = Mathf.Clamp(aData.width_track,width_track_min,position.width-70f);
 		if(aData.width_track != width_track) aData.width_track = width_track;
 		
 		currentMousePosition = e.mousePosition;
@@ -652,396 +639,360 @@ public class AMTimeline : EditorWindow {
 		// get number of tracks in current take, use for tracks and keys, disabling zoom slider
 		int trackCount = aData.getCurrentTake().getTrackCount();
 		#endregion
+
+		//
+		//
+		//
+		//
+		//
+		//
+
 		#region menu bar
-		GUIStyle styleLabelMenu = new GUIStyle(EditorStyles.toolbarButton);
-		styleLabelMenu.normal.background = null;
-		//GUI.color = new Color(190f/255f,190f/255f,190f/255f,1f);
-		GUI.DrawTexture(new Rect(0f,0f,position.width,height_menu_bar-2f),EditorStyles.toolbar.normal.background);
-		//GUI.color = Color.white;
-		#region options button
-		Rect rectBtnOptions = new Rect(margin,0f,60f,height_button_delete);
+		GUI.DrawTexture(new Rect(0f,0f, position.width, height_menu_bar-2f),EditorStyles.toolbar.normal.background);
 
-
-		GUIStyle styleBtnPlayOnStart = new GUIStyle(/*GUI.skin.GetStyle("ButtonImage")*/EditorStyles.toolbarButton);
-		if(time_numbering) {
-			styleBtnPlayOnStart.normal.background = styleBtnPlayOnStart.onNormal.background;
-			styleBtnPlayOnStart.hover.background = styleBtnPlayOnStart.onNormal.background;
-		}
-		if(GUI.Button(rectBtnOptions,new GUIContent(getSkinTextureStyleState("playonstart").background,"Show time instead of frame numbers"),styleBtnPlayOnStart)) {
-			if(!time_numbering) time_numbering = true;
-			else time_numbering = false;
-		}
-
-//		if(GUI.Button(rectBtnOptions,"Options", EditorStyles.toolbarButton)) {
-//			EditorWindow windowOptions = ScriptableObject.CreateInstance<AMOptions>();
-//			//windowOptions.Show();
-//			windowOptions.ShowUtility();
-//			//EditorWindow.GetWindow (typeof (AMOptions));
-//		}
-		if(rectBtnOptions.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
-		#endregion
-		#region take popup, change take or create new take
-		Rect rectLabelCurrentTake = new Rect(rectBtnOptions.x, rectBtnOptions.y,rectBtnOptions.width,rectBtnOptions.height);
-
-		GUI.Label(rectLabelCurrentTake,"Current Take:",styleLabelMenu);
-
-		Rect rectTakePopup = new Rect(rectLabelCurrentTake.x+rectLabelCurrentTake.width+margin,rectLabelCurrentTake.y/*+3f*/,width_take_popup,20f);
-		// if renaming take, show textfield
-		if(isRenamingTake) {
-			GUI.SetNextControlName("RenameTake");
-			Rect rectRenameTake = new Rect(rectTakePopup);
-			rectRenameTake.x += 4f;
-			rectRenameTake.width -= 4f;
-			rectRenameTake.y += 3f;
-			aData.getCurrentTake().name = GUI.TextField(rectRenameTake,aData.getCurrentTake().name,EditorStyles.toolbarTextField);
-			GUI.FocusControl("RenameTake");
-		} else {
-			// show popup
-			if(aData.setCurrentTakeValue(EditorGUI.Popup(rectTakePopup,aData.getCurrentTakeValue(),aData.getTakeNames(),EditorStyles.toolbarPopup))) {
-				// take changed
-				// destroy camera fade
-				if(AMCameraFade.hasInstance()) AMCameraFade.destroyImmediateInstance();
-				// if not creating new take
-				if(aData.getCurrentTakeValue() != aData.takes.Count) {
-					// select current frame
-					timelineSelectFrame(aData.getCurrentTake().selectedTrack,aData.getCurrentTake().selectedFrame);
-					// save data
-					EditorUtility.SetDirty(aData);
-					// refresh component
-					refreshGizmos();
-				}
-			}
-		}
-		#endregion
-		#region rename take button
-		Texture texRenameTake;
-		if(isRenamingTake) texRenameTake = getSkinTextureStyleState("accept").background;
-		else texRenameTake = getSkinTextureStyleState("rename").background;
-		Rect rectBtnRenameTake = new Rect(rectTakePopup.x+rectTakePopup.width+margin,rectLabelCurrentTake.y,width_button_delete,height_button_delete);
-		// button
-		if(GUI.Button(rectBtnRenameTake,new GUIContent(texRenameTake,(isRenamingTake ? "Accept" : "Rename Take")),/*GUI.skin.GetStyle("ButtonImage")*/EditorStyles.toolbarButton)) {
-			if(!isRenamingTake) registerUndo("Rename Take");
-			GUIUtility.keyboardControl = 0;
-			cancelTextEditting(true);	// toggle isRenamingTake
-		}
-		if(rectBtnRenameTake.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
-		#endregion
-		#region delete take button
-		Rect rectBtnDeleteTake = new Rect(rectBtnRenameTake.x+rectBtnRenameTake.width+margin,rectBtnRenameTake.y,width_button_delete,height_button_delete);
-		if(GUI.Button(rectBtnDeleteTake,new GUIContent("","Delete Take"),/*GUI.skin.GetStyle("ButtonImage")*/EditorStyles.toolbarButton)) {
-			if((EditorUtility.DisplayDialog("Delete Take","Are you sure you want to delete take '"+aData.getCurrentTake().name+"'?","Delete","Cancel"))) {
-				registerUndo("Delete Take");
-				aData.deleteCurrentTake();
-				// save data
-				EditorUtility.SetDirty(aData);
-				setDirtyTakes(aData.takes);
-				// refresh component
-				refreshGizmos();
-			}
-		}
-		if(!GUI.enabled) GUI.color = new Color(GUI.color.r,GUI.color.g,GUI.color.b,0.25f);
-		GUI.DrawTexture(new Rect(rectBtnDeleteTake.x+(rectBtnDeleteTake.height-10f)/2f,rectBtnDeleteTake.y+(rectBtnDeleteTake.width-10f)/2f-2f,10f,10f),(getSkinTextureStyleState((GUI.enabled && rectBtnDeleteTake.Contains(e.mousePosition) ? "delete_hover" : "delete")).background));
-		if(rectBtnDeleteTake.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
-		if(GUI.color.a < 1f) GUI.color = new Color(GUI.color.r,GUI.color.g,GUI.color.b,1f);
-		#endregion
-		#region create new take after deleting
-		if(aData.getCurrentTakeValue() == aData.takes.Count) {
-			aData.currentTake -=1; // decrement for undo
-			registerUndo("New Take");
-			aData.currentTake += 1;
+		#region toggle play button
+		Rect rectBtnTogglePlay = new Rect(margin,0f,24f,height_button);
+		// change label if already playing
+		Texture playToggleTexture;
+		if(isPlaying) playToggleTexture = getSkinTextureStyleState("nav_stop").background;
+		else playToggleTexture = getSkinTextureStyleState("nav_play").background;
+		GUI.enabled = (aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0 ? true : false);
+		if(GUI.Button (rectBtnTogglePlay,playToggleTexture,EditorStyles.toolbarButton)) {
+			if(isChangingTimeControl) isChangingTimeControl = false;
+			if(isChangingFrameControl) isChangingFrameControl = false;
+			// cancel renaming
 			cancelTextEditting();
-			aData.addTake ();
-			// save data
-			EditorUtility.SetDirty(aData);
-			setDirtyTakes(aData.takes);
-			// refresh component
-			refreshGizmos();
+			// toggle play
+			playerTogglePlay();
+		}
+		if(rectBtnTogglePlay.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+			mouseOverElement = (int)ElementType.Button;
 		}
 		#endregion
-		#region settings
-		Rect rectLabelSettings = new Rect(rectBtnDeleteTake.x+rectBtnDeleteTake.width+margin,rectBtnDeleteTake.y,200f,rectBtnDeleteTake.height);
-		
-		string strSettings = "Settings: "+aData.getCurrentTake().numFrames+" Frames; "+aData.getCurrentTake().frameRate+" Fps";
-		rectLabelSettings.width = GUI.skin.label.CalcSize(new GUIContent(strSettings)).x;
-		GUI.Label (rectLabelSettings,strSettings,styleLabelMenu);
 
-		Rect rectBtnModify = new Rect(rectLabelSettings.x+rectLabelSettings.width+margin,rectLabelSettings.y,60f,rectBtnOptions.height);
-		if(GUI.Button(rectBtnModify,"Modify",EditorStyles.toolbarButton)) {
-			EditorWindow windowSettings = ScriptableObject.CreateInstance<AMSettings>();
-			windowSettings.ShowUtility();
+		#region select first frame button
+		Rect rectBtnSkipBack = new Rect(rectBtnTogglePlay.x + rectBtnTogglePlay.width + margin,rectBtnTogglePlay.y,width_button,height_button);
+		if(GUI.Button (rectBtnSkipBack,getSkinTextureStyleState("nav_skip_back").background,EditorStyles.toolbarButton)) timelineSelectFrame(aData.getCurrentTake().selectedTrack,1);
+		if(rectBtnSkipBack.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+			mouseOverElement = (int)ElementType.Button;
 		}
-		if(rectBtnModify.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
 		#endregion
-		#region zoom slider
-		if(trackCount<=0) GUI.enabled = false;	// disable slider if there are no tracks
-		// adjust zoom slider width
-		float width_zoom_slider_dynamic = Mathf.Clamp(position.width-(rectBtnModify.x+rectBtnModify.width)-margin-25f,0f,250f);
-		Rect rectZoomSlider = new Rect(position.width-25f-width_zoom_slider_dynamic+5f,rectBtnModify.y,width_zoom_slider_dynamic-5f,20f);
-		if(dragType != (int)DragType.CursorZoom)aData.zoom = GUI.HorizontalSlider(rectZoomSlider,aData.zoom,1f,0f);
-		else GUI.HorizontalSlider(rectZoomSlider,aData.zoom,1f,0f);
-		if(rectZoomSlider.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-			mouseOverElement = (int)ElementType.Other;	
-		}
-		GUI.enabled = !isPlaying;
-		
-		bool birdseye = (current_width_frame <= width_frame_birdseye_min ? true : false);
-		// show or hide zoom texture
-		GUI.DrawTexture(new Rect(position.width-25f,0f,20f,20f),getSkinTextureStyleState("zoom").background);
-		#endregion
-		#endregion
-		#region control bar
-		#region auto-key button
-		GUIStyle styleBtnAutoKey = new GUIStyle(GUI.skin.button);
-		styleBtnAutoKey.clipping = TextClipping.Overflow;
-		if(aData.autoKey) {
-			styleBtnAutoKey.normal.background = GUI.skin.button.active.background;
-			styleBtnAutoKey.normal.textColor = Color.red;
-			styleBtnAutoKey.hover.background = GUI.skin.button.active.background;
-			styleBtnAutoKey.hover.textColor = Color.red;
-		}
-		Rect rectBtnAutoKey = new Rect(margin,height_menu_bar+margin,40f,15f);
-		if(GUI.Button (rectBtnAutoKey,new GUIContent("Auto","Auto-Key"),styleBtnAutoKey)) aData.autoKey = !aData.autoKey;
-		if(rectBtnAutoKey.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
-		#endregion
-		if(trackCount<=0 || aData.getCurrentTake().selectedTrack == -1) GUI.enabled = false;	// disable key controls if there are no tracks
+
 		#region select previous key
-		Rect rectBtnPrevKey = new Rect(rectBtnAutoKey.x+rectBtnAutoKey.width+margin,rectBtnAutoKey.y,30f,15f);
-		if(GUI.Button (rectBtnPrevKey,new GUIContent((getSkinTextureStyleState("prev_key").background),"Prev. Key"),GUI.skin.GetStyle("ButtonImage"))) {
+		Rect rectBtnPrevKey = new Rect(rectBtnSkipBack.x+rectBtnSkipBack.width,rectBtnSkipBack.y,width_button,height_button);
+		if(GUI.Button (rectBtnPrevKey,new GUIContent((getSkinTextureStyleState("prev_key").background),"Prev. Key"),EditorStyles.toolbarButton)) {
 			timelineSelectPrevKey();
 		}
 		if(rectBtnPrevKey.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
 		#endregion
-		# region insert key
-		Rect rectBtnInsertKey = new Rect(rectBtnPrevKey.x+rectBtnPrevKey.width+margin,rectBtnPrevKey.y,23f,15f);
-		if(GUI.Button (rectBtnInsertKey,new GUIContent("K","Insert Key"))) {
-			addKeyToSelectedFrame();
+
+		#region frame control
+		GUIStyle fieldStyle = new GUIStyle(EditorStyles.numberField);
+		fieldStyle.alignment = TextAnchor.MiddleCenter;
+		Rect rectFrameControl = new Rect(rectBtnPrevKey.x+rectBtnPrevKey.width,rectBtnPrevKey.y,width_scrub_control,height_button);
+		int selectedFrame = EditorGUI.IntField(new Rect(rectFrameControl.x+2f,rectFrameControl.y+2f,rectFrameControl.width-4f,rectFrameControl.height-8f),aData.getCurrentTake().selectedFrame,fieldStyle);
+		selectFrame(selectedFrame);
+		if(rectFrameControl.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+			mouseOverElement = (int)ElementType.Other;
 		}
-		if(rectBtnInsertKey.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
 		#endregion
+		
 		#region select next key
-		Rect rectBtnNextKey = new Rect(rectBtnInsertKey.x+rectBtnInsertKey.width+margin,rectBtnInsertKey.y,30f,15f);
-		if(GUI.Button (rectBtnNextKey,new GUIContent((getSkinTextureStyleState("next_key").background),"Next Key"),GUI.skin.GetStyle("ButtonImage"))) {
+		Rect rectBtnNextKey = new Rect(rectFrameControl.x+rectFrameControl.width,rectFrameControl.y,width_button,height_button);
+		if(GUI.Button (rectBtnNextKey,new GUIContent((getSkinTextureStyleState("next_key").background),"Next Key"),EditorStyles.toolbarButton)) {
 			timelineSelectNextKey();
 		}
 		if(rectBtnNextKey.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
 		#endregion
-		GUI.enabled = !isPlaying;
+
+		#region select last frame button
+		GUI.enabled = (aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0 ? !isPlaying : false);
+		Rect rectSkipForward = new Rect(rectBtnNextKey.x+rectBtnNextKey.width,rectBtnNextKey.y,width_button,height_button);
+		if(GUI.Button (rectSkipForward,getSkinTextureStyleState("nav_skip_forward").background,EditorStyles.toolbarButton)) timelineSelectFrame(aData.getCurrentTake().selectedTrack,aData.getCurrentTake().numFrames);
+		if(rectSkipForward.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+			mouseOverElement = (int)ElementType.Button;
+		}
 		#endregion
-		#region playback controls
-		Rect rectAreaPlaybackControls = new Rect(0f,position.height-height_indicator_footer,width_track+width_playback_controls,height_playback_controls);
-		GUI.BeginGroup(rectAreaPlaybackControls);
-			#region new track button
-			Rect rectNewTrack = new Rect(5f,height_indicator_footer/2f-15f/2f,15f,15f);
-			Rect rectBtnNewTrack = new Rect(rectNewTrack.x,0f,rectNewTrack.width,height_indicator_footer);
-			if(GUI.Button (rectBtnNewTrack,new GUIContent("","New Track"),"label")) {
-				if(objects_window.Count > 0) objects_window = new List<GameObject>();
-				if(menu.GetItemCount() <= 0) buildAddTrackMenu();
-				menu.ShowAsContext();
-			}
-			GUI.DrawTexture(rectNewTrack,(rectBtnNewTrack.Contains(e.mousePosition) ? tex_icon_track_hover : tex_icon_track));
-			if(rectBtnNewTrack.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-				mouseOverElement = (int)ElementType.Button;
-			}
-			#endregion
-			#region new group button
-			Rect rectNewGroup = new Rect(rectNewTrack.x+rectNewTrack.width + 5f,height_indicator_footer/2f-15f/2f,15f,15f);
-			Rect rectBtnNewGroup = new Rect(rectNewGroup.x,0f,rectNewGroup.width,height_indicator_footer);
-			if(GUI.Button (rectBtnNewGroup,new GUIContent("","New Group"),"label")) {
-				cancelTextEditting();
-				registerUndo("New Group");
-				aData.getCurrentTake().addGroup();
-				setScrollViewValue(maxScrollView());
-			}
-			GUI.DrawTexture(rectNewGroup,(rectBtnNewGroup.Contains(e.mousePosition) ? tex_icon_group_hover : tex_icon_group_closed));
-			if(rectBtnNewGroup.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-				mouseOverElement = (int)ElementType.Button;
-			}
-			#endregion
-			#region delete track button
-			Rect rectDeleteElement = new Rect(rectNewGroup.x+rectNewGroup.width + 5f+1f,height_indicator_footer/2f-11f/2f,11f,11f);
-			Rect rectBtnDeleteElement = new Rect(rectDeleteElement.x,0f,rectDeleteElement.width,height_indicator_footer);
-			if(aData.getCurrentTake().selectedGroup>=0) GUI.enabled = false;
-			if (aData.getCurrentTake().selectedGroup >= 0 &&  (trackCount <= 0 || (aData.getCurrentTake().contextSelectionTracks != null && aData.getCurrentTake().contextSelectionTracks.Count <= 0))) GUI.enabled = false;
-			else GUI.enabled = !isPlaying;
-			if(!GUI.enabled) GUI.color = new Color(GUI.color.r,GUI.color.g,GUI.color.b,0.25f);
-			GUIContent gcDeleteButton;
-			string strTitleDeleteTrack = (aData.getCurrentTake().contextSelectionTracks != null && aData.getCurrentTake().contextSelectionTracks.Count > 1 ? "Tracks" : "Track");
-			if(!GUI.enabled) gcDeleteButton = new GUIContent("");
-			else gcDeleteButton = new GUIContent("","Delete "+(aData.getCurrentTake().contextSelectionTracks != null && aData.getCurrentTake().contextSelectionTracks.Count > 0 ? strTitleDeleteTrack : "Group"));
-			if(GUI.Button (rectBtnDeleteElement,gcDeleteButton,"label")) {
-				cancelTextEditting();
-				if(aData.getCurrentTake().contextSelectionTracks.Count > 0) {
-					string strMsgDeleteTrack = (aData.getCurrentTake().contextSelectionTracks.Count > 1 ? "multiple tracks" : "track '"+aData.getCurrentTake().getSelectedTrack().name+"'");
-					
-					if((EditorUtility.DisplayDialog("Delete "+strTitleDeleteTrack,"Are you sure you want to delete "+strMsgDeleteTrack+"?","Delete","Cancel"))) {
-						registerUndo("Delete Track");
-						isRenamingTrack = -1;
-						// delete camera fade
-						if(aData.getCurrentTake().selectedTrack != -1 && aData.getCurrentTake().getSelectedTrack() == aData.getCurrentTake().cameraSwitcher && AMCameraFade.hasInstance() && AMCameraFade.isPreview()) {
-							AMCameraFade.destroyImmediateInstance();
-						}
-						foreach(int track_id in aData.getCurrentTake().contextSelectionTracks) {
-							aData.getCurrentTake().deleteTrack(track_id);
-						}
-						aData.getCurrentTake().contextSelectionTracks = new List<int>();
-						//aData.getCurrentTake().deleteTrack(aData.getCurrentTake().selectedTrack);
-						// save data
-						setDirtyTracks(aData.getCurrentTake());
-						// refresh gizmos
-						refreshGizmos();
-						// deselect track
-						aData.getCurrentTake().selectedTrack = -1;
-						// deselect group
-						aData.getCurrentTake().selectedGroup = 0;
+
+		#region playback speed popup
+		Rect rectPopupPlaybackSpeed = new Rect(rectSkipForward.x+rectSkipForward.width+margin,rectSkipForward.y,34f,height_button);
+		aData.takes[aData.getCurrentTakeValue()].playbackSpeedIndex = EditorGUI.Popup(rectPopupPlaybackSpeed,aData.takes[aData.getCurrentTakeValue()].playbackSpeedIndex,playbackSpeed,EditorStyles.toolbarButton);
+		#endregion
+
+		#region settings
+		Rect rectLabelSettings = new Rect(rectPopupPlaybackSpeed.x+rectPopupPlaybackSpeed.width+margin,rectPopupPlaybackSpeed.y,200f,height_button);
+		
+		GUIStyle styleLabelMenu = new GUIStyle(EditorStyles.toolbarButton);
+		styleLabelMenu.normal.background = null;
+		string strSettings = "Settings: "+aData.getCurrentTake().numFrames+" Frames; "+aData.getCurrentTake().frameRate+" Fps";
+		rectLabelSettings.width = GUI.skin.label.CalcSize(new GUIContent(strSettings)).x;
+		GUI.Label (rectLabelSettings,strSettings,styleLabelMenu);
+		Rect rectBtnModify = new Rect(rectLabelSettings.x+rectLabelSettings.width+margin,rectLabelSettings.y,60f,height_button);
+		if(GUI.Button(rectBtnModify,"Modify",EditorStyles.toolbarButton)) {
+			//EditorWindow windowSettings = ScriptableObject.CreateInstance<AMSettings>();
+			//windowSettings.ShowUtility();
+
+			//TODO
+			CustomInspector windowSettings = ScriptableObject.CreateInstance<CustomInspector>();
+			windowSettings.sTrack = aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack);
+			windowSettings.selectedFrame = aData.getCurrentTake().selectedFrame;
+			windowSettings.ShowUtility();
+		}
+		if(rectBtnModify.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
+		#endregion
+
+		#region switch button
+
+		Rect rectBtnSwitch = new Rect(rectBtnModify.x+rectBtnModify.width+margin,rectBtnModify.y,70f,height_button);
+		GUIStyle styleBtnSwitch = new GUIStyle(/*GUI.skin.GetStyle("ButtonImage")*/EditorStyles.toolbarButton);
+		GUIContent contentBtnSwitch = new GUIContent("Show time","Show time instead of frame numbers");
+		if(time_numbering) {
+			styleBtnSwitch.normal.background = styleBtnSwitch.onNormal.background;
+			styleBtnSwitch.hover.background = styleBtnSwitch.onNormal.background;
+			contentBtnSwitch.text = "Show frames";
+			contentBtnSwitch.tooltip = "Show frames instead of time numbers";
+		}
+		if(GUI.Button(rectBtnSwitch, contentBtnSwitch, styleBtnSwitch)) {
+			if(!time_numbering) time_numbering = true;
+			else time_numbering = false;
+		}
+		if(rectBtnSwitch.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
+		#endregion
+		
+		#endregion
+
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
+		bool birdseye = (current_width_frame <= width_frame_birdseye_min ? true : false);
+		GUI.enabled = !isPlaying;
+
+		#region control bar
+		GUI.DrawTexture(new Rect(0f,height_menu_bar-2f, position.width, height_menu_bar-2f), EditorStyles.toolbar.normal.background);
+
+		#region new track button
+		Rect rectBtnNewTrack = new Rect(margin,height_menu_bar-2f, 60f ,height_button);
+		if(GUI.Button (rectBtnNewTrack,"Add Track", EditorStyles.toolbarButton)) {
+			if(objects_window.Count > 0) objects_window = new List<GameObject>();
+			if(menu.GetItemCount() <= 0) buildAddTrackMenu();
+			menu.ShowAsContext();
+		}
+		if(rectBtnNewTrack.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+			mouseOverElement = (int)ElementType.Button;
+		}
+		#endregion
+
+		#region delete track button
+		Rect rectBtnDeleteElement = new Rect(rectBtnNewTrack.x + rectBtnNewTrack.width,rectBtnNewTrack.y,45f,height_button);
+		if(aData.getCurrentTake().selectedGroup>=0) GUI.enabled = false;
+		if (aData.getCurrentTake().selectedGroup >= 0 &&  (trackCount <= 0 || (aData.getCurrentTake().contextSelectionTracks != null && aData.getCurrentTake().contextSelectionTracks.Count <= 0))) GUI.enabled = false;
+		else GUI.enabled = !isPlaying;
+		string strTitleDeleteTrack = (aData.getCurrentTake().contextSelectionTracks != null && aData.getCurrentTake().contextSelectionTracks.Count > 1 ? "Tracks" : "Track");
+		if(GUI.Button (rectBtnDeleteElement,"Delete", EditorStyles.toolbarButton)) {
+			cancelTextEditting();
+			if(aData.getCurrentTake().contextSelectionTracks.Count > 0) {
+				string strMsgDeleteTrack = (aData.getCurrentTake().contextSelectionTracks.Count > 1 ? "multiple tracks" : "track '"+aData.getCurrentTake().getSelectedTrack().name+"'");
+				
+				if((EditorUtility.DisplayDialog("Delete "+strTitleDeleteTrack,"Are you sure you want to delete "+strMsgDeleteTrack+"?","Delete","Cancel"))) {
+					registerUndo("Delete Track");
+					isRenamingTrack = -1;
+					// delete camera fade
+					if(aData.getCurrentTake().selectedTrack != -1 && aData.getCurrentTake().getSelectedTrack() == aData.getCurrentTake().cameraSwitcher && AMCameraFade.hasInstance() && AMCameraFade.isPreview()) {
+						AMCameraFade.destroyImmediateInstance();
 					}
-				} else {
-					bool delete = true;
-					bool deleteContents = false;
-					AMGroup grp = aData.getCurrentTake().getGroup(aData.getCurrentTake().selectedGroup);
-					if(grp.elements.Count > 0) {
-						int choice = EditorUtility.DisplayDialogComplex("Delete Contents?","'"+grp.group_name+"' contains contents that can be deleted with the group.","Delete Contents","Keep Contents","Cancel");
-						if(choice == 2) delete = false;
-						else if(choice == 0) deleteContents = true;
-						if(delete) {
-							registerUndo("Delete Group");
-							aData.getCurrentTake().deleteSelectedGroup(deleteContents);
-						}
-					} else {
+					foreach(int track_id in aData.getCurrentTake().contextSelectionTracks) {
+						aData.getCurrentTake().deleteTrack(track_id);
+					}
+					aData.getCurrentTake().contextSelectionTracks = new List<int>();
+					//aData.getCurrentTake().deleteTrack(aData.getCurrentTake().selectedTrack);
+					// save data
+					setDirtyTracks(aData.getCurrentTake());
+					// refresh gizmos
+					refreshGizmos();
+					// deselect track
+					aData.getCurrentTake().selectedTrack = -1;
+					// deselect group
+					aData.getCurrentTake().selectedGroup = 0;
+				}
+			} else {
+				bool delete = true;
+				bool deleteContents = false;
+				AMGroup grp = aData.getCurrentTake().getGroup(aData.getCurrentTake().selectedGroup);
+				if(grp.elements.Count > 0) {
+					int choice = EditorUtility.DisplayDialogComplex("Delete Contents?","'"+grp.group_name+"' contains contents that can be deleted with the group.","Delete Contents","Keep Contents","Cancel");
+					if(choice == 2) delete = false;
+					else if(choice == 0) deleteContents = true;
+					if(delete) {
 						registerUndo("Delete Group");
 						aData.getCurrentTake().deleteSelectedGroup(deleteContents);
 					}
+				} else {
+					registerUndo("Delete Group");
+					aData.getCurrentTake().deleteSelectedGroup(deleteContents);
 				}
 			}
-			GUI.DrawTexture(rectDeleteElement,(getSkinTextureStyleState((GUI.enabled && rectBtnDeleteElement.Contains(e.mousePosition) ? "delete_hover" : "delete")).background));	
-			if(rectBtnDeleteElement.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-				mouseOverElement = (int)ElementType.Button;
-			}
-			if(GUI.color.a < 1f) GUI.color = new Color(GUI.color.r,GUI.color.g,GUI.color.b,1f);
-			GUI.enabled = !isPlaying;
-			#endregion
-			#region resize track
-			Rect rectResizeTrack = new Rect(width_track-5f-10f,height_indicator_footer/2f-10f/2f-4f,15f,15f);
-			GUI.Button(rectResizeTrack,"",GUI.skin.GetStyle("ResizeTrackThumb"));
-			if(rectResizeTrack.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-				mouseOverElement = (int)ElementType.ResizeTrack;
-			}
-			if(GUI.enabled) EditorGUIUtility.AddCursorRect(rectResizeTrack,MouseCursor.ResizeHorizontal);
-			GUI.enabled = (aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0 ? !isPlaying : false);
-			#endregion
-			#region select first frame button
-			Rect rectBtnSkipBack = new Rect(width_track+margin,margin,32f,height_playback_controls-margin*2);
-			if(GUI.Button (rectBtnSkipBack,getSkinTextureStyleState("nav_skip_back").background,GUI.skin.GetStyle("ButtonImage"))) timelineSelectFrame(aData.getCurrentTake().selectedTrack,1);
-			if(rectBtnSkipBack.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-				mouseOverElement = (int)ElementType.Button;
-			}
-			#endregion
-			#region toggle play button
-			// change label if already playing
-			Texture playToggleTexture;
-			if(isPlaying) playToggleTexture = getSkinTextureStyleState("nav_stop").background;
-			else playToggleTexture = getSkinTextureStyleState("nav_play").background;
-			GUI.enabled = (aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0 ? true : false);
-			Rect rectBtnTogglePlay = new Rect(rectBtnSkipBack.x+rectBtnSkipBack.width+margin,rectBtnSkipBack.y,rectBtnSkipBack.width,rectBtnSkipBack.height);
-			if(GUI.Button (rectBtnTogglePlay,playToggleTexture,GUI.skin.GetStyle("ButtonImage"))) {
-				if(isChangingTimeControl) isChangingTimeControl = false;
-				if(isChangingFrameControl) isChangingFrameControl = false;
-				// cancel renaming
-				cancelTextEditting();
-				// toggle play
-				playerTogglePlay();
-			}
-			if(rectBtnTogglePlay.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-				mouseOverElement = (int)ElementType.Button;
-			}
-			#endregion
-			#region select last frame button
-			GUI.enabled = (aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0 ? !isPlaying : false);
-			Rect rectSkipForward = new Rect(rectBtnTogglePlay.x+rectBtnTogglePlay.width+margin,rectBtnTogglePlay.y,rectBtnTogglePlay.width,rectBtnTogglePlay.height);
-			if(GUI.Button (rectSkipForward,getSkinTextureStyleState("nav_skip_forward").background,GUI.skin.GetStyle("ButtonImage"))) timelineSelectFrame(aData.getCurrentTake().selectedTrack,aData.getCurrentTake().numFrames);
-			if(rectSkipForward.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-				mouseOverElement = (int)ElementType.Button;
-			}
-			#endregion
-			#region playback speed popup
-			Rect rectPopupPlaybackSpeed = new Rect(rectSkipForward.x+rectSkipForward.width+margin,height_indicator_footer/2f-15f/2f,width_playback_speed,rectBtnTogglePlay.height);
-			aData.takes[aData.getCurrentTakeValue()].playbackSpeedIndex = EditorGUI.Popup(rectPopupPlaybackSpeed,aData.takes[aData.getCurrentTakeValue()].playbackSpeedIndex,playbackSpeed);
-			#endregion
-			#region scrub controls
-			GUIStyle styleScrubControl = new GUIStyle(GUI.skin.label);
-			string stringTime = frameToTime(aData.getCurrentTake().selectedFrame,(float)aData.getCurrentTake().frameRate).ToString("N2")+" s";
-			string stringFrame = aData.getCurrentTake().selectedFrame.ToString()+" fr";
-			int timeFontSize = findWidthFontSize(width_scrub_control,styleScrubControl,new GUIContent(stringTime),8,14);
-			int frameFontSize = findWidthFontSize(width_scrub_control,styleScrubControl,new GUIContent(stringFrame),8,14);
-			styleScrubControl.fontSize = (timeFontSize <= frameFontSize ? timeFontSize : frameFontSize);
-			#region frame control
-			Rect rectFrameControl = new Rect(rectPopupPlaybackSpeed.x+rectPopupPlaybackSpeed.width+margin,1f,width_scrub_control,height_indicator_footer);		
-			// frame control button
-			if(!isChangingFrameControl) {
-				// set time control font size
-				if(GUI.Button(rectFrameControl,stringFrame,styleScrubControl)) {
-					if(dragType!=(int)DragType.FrameScrub) {
-						if(isChangingTimeControl) isChangingTimeControl = false;
-						cancelTextEditting();
-						isChangingFrameControl = true;
-					
+		}
+		if(rectBtnDeleteElement.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+			mouseOverElement = (int)ElementType.Button;
+		}
+		GUI.enabled = !isPlaying;
+		#endregion
+
+		# region insert key
+		Rect rectBtnInsertKey = new Rect(rectBtnDeleteElement.x+rectBtnDeleteElement.width,rectBtnDeleteElement.y,50f,height_button);
+		if(GUI.Button (rectBtnInsertKey,"Add Key",EditorStyles.toolbarButton)) {
+			addKeyToSelectedFrame();
+		}
+		if(rectBtnInsertKey.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
+		#endregion
+
+		#endregion
+
+		
+
+
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
+		#region key numbering
+		Rect rectKeyNumbering = new Rect(width_track,2*height_menu_bar+2f-22f,position.width-width_track-20f,20f);
+		if(rectKeyNumbering.Contains(e.mousePosition) && (mouseOverElement == (int)ElementType.None)) {
+			mouseOverElement = (int)ElementType.TimelineScrub;
+		}
+		int key_dist = 5;
+		if(numFramesToRender >= 100) key_dist = Mathf.FloorToInt(numFramesToRender/100)*10;
+		int firstMarkedKey = (int)aData.getCurrentTake().startFrame;
+		if(firstMarkedKey % key_dist != 0 && firstMarkedKey != 1) {
+			firstMarkedKey += key_dist-firstMarkedKey % key_dist;
+		}
+		float lastNumberX = -1f;
+		for(int i=firstMarkedKey;i<=(int)aData.getCurrentTake().endFrame;i+=key_dist) {
+				float newKeyNumberX = width_track+current_width_frame*(i-(int)aData.getCurrentTake().startFrame)-1f;
+				string key_number; 
+				if(time_numbering) key_number = frameToTime(i,(float)aData.getCurrentTake().frameRate).ToString("N2");
+				else key_number = i.ToString();
+				Rect rectKeyNumber = new Rect(newKeyNumberX,height_menu_bar,GUI.skin.label.CalcSize(new GUIContent(key_number)).x,height_menu_bar);
+				bool didCutLabel = false;
+				if(rectKeyNumber.x+rectKeyNumber.width >= position.width-20f) {
+					rectKeyNumber.width = position.width-20f-rectKeyNumber.x;
+					didCutLabel = true;
+				}
+				if(!(didCutLabel && aData.getCurrentTake().endFrame==aData.getCurrentTake().numFrames)) {
+					if(rectKeyNumber.x > lastNumberX+3f) {
+						GUI.Label(rectKeyNumber,key_number);
+						lastNumberX = rectKeyNumber.x+GUI.skin.label.CalcSize(new GUIContent(key_number)).x;
 					}
 				}
-				// scrubbing cursor
-				if(!isPlaying && aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0) EditorGUIUtility.AddCursorRect(rectFrameControl,MouseCursor.SlideArrow);
-				// check for drag
-				if(rectFrameControl.Contains(e.mousePosition) && aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0) {
-					mouseOverElement = (int)ElementType.FrameScrub;
-				}
-			} else {
-				// changing frame control
-				selectFrame((int)Mathf.Clamp(EditorGUI.FloatField(new Rect(rectFrameControl.x,rectFrameControl.y+2f,rectFrameControl.width,rectFrameControl.height),aData.getCurrentTake().selectedFrame,GUI.skin.textField/*,styleButtonTimeControlEdit*/),1,aData.getCurrentTake().numFrames));
-				if(rectFrameControl.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-					mouseOverElement = (int)ElementType.Other;
-				}
-			}
-			#endregion
-			#region time control
-			Rect rectTimeControl = new Rect(rectFrameControl.x+rectFrameControl.width+margin,rectFrameControl.y,rectFrameControl.width,rectFrameControl.height);
-			if(!isChangingTimeControl) {
-				// set time control font size
-				if(GUI.Button(rectTimeControl,stringTime,styleScrubControl)) {
-					if(dragType!=(int)DragType.TimeScrub) {
-						if(isChangingFrameControl) isChangingFrameControl = false;
-						cancelTextEditting();
-						isChangingTimeControl = true;
-					}
-				}
-				// scrubbing cursor
-				if(!isPlaying && aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0) EditorGUIUtility.AddCursorRect(rectTimeControl,MouseCursor.SlideArrow);
-				// check for drag
-				if(rectTimeControl.Contains(e.mousePosition) && aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0) {
-					mouseOverElement = (int)ElementType.TimeScrub;
-				}
-			} else {
-				// changing time control
-				selectFrame(Mathf.Clamp(timeToFrame(EditorGUI.FloatField(new Rect(rectTimeControl.x,rectTimeControl.y+2f,rectTimeControl.width,rectTimeControl.height),frameToTime(aData.getCurrentTake().selectedFrame,(float)aData.getCurrentTake().frameRate),GUI.skin.textField/*,styleButtonTimeControlEdit*/),(float)aData.getCurrentTake().frameRate),1,aData.getCurrentTake().numFrames));
-				if(rectTimeControl.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-					mouseOverElement = (int)ElementType.Other;
-				}
-			}
-			GUI.enabled =  !isPlaying;
-			#endregion
-			#endregion
-		GUI.EndGroup();
-		Rect rectFooter = new Rect(rectAreaPlaybackControls.x,rectAreaPlaybackControls.y,position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-5f,rectAreaPlaybackControls.height);
-		if(rectFooter.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-			mouseOverElement = (int)ElementType.Other;
+				if(i == 1) i--;
 		}
 		#endregion
+
+		//
+		//
+		//
+		//
+		
+		#region main scrollview
+		height_all_tracks = aData.getCurrentTake().getElementsHeight(0,height_track,height_track_foldin,height_group);
+		float height_scrollview = position.height-2*height_menu_bar+4f - height_indicator_footer;
+		// check if mouse is beyond tracks and dragging group element
+		difference = 0;
+		// drag up
+		if(dragType == (int)DragType.GroupElement && globalMousePosition.y <= height_menu_bar*2+2f) {
+			difference = Mathf.CeilToInt((height_menu_bar*2+2f)-globalMousePosition.y);
+			scrollAmountVertical = -difference;	// set scroll amount
+		// drag down
+		} else if(dragType == (int)DragType.GroupElement && globalMousePosition.y >= position.height-height_indicator_footer) {
+			difference = Mathf.CeilToInt(globalMousePosition.y-(position.height-height_indicator_footer));
+			scrollAmountVertical = difference; // set scroll amount
+		} else {
+			scrollAmountVertical = 0f;
+		}
+		// tracks bg
+		GUI.Box(new Rect(0f,height_menu_bar*2-4f,width_track,height_scrollview),"",GUI.skin.GetStyle("GroupElementBG"));
+
+		Rect rectScrollView = new Rect(0f,height_menu_bar*2-4f,position.width,height_scrollview);
+		Rect rectView = new Rect(0f,0f,rectScrollView.width-20f,(height_all_tracks > rectScrollView.height ? height_all_tracks : rectScrollView.height));
+		scrollViewValue = GUI.BeginScrollView(rectScrollView,scrollViewValue,rectView,false,true);
+			scrollViewValue.y = Mathf.Clamp(scrollViewValue.y, 0f, height_all_tracks-height_scrollview);
+			Vector2 scrollViewBounds = new Vector2(scrollViewValue.y,scrollViewValue.y+height_scrollview); // min and max y displayed onscreen
+			bool isAnyTrackFoldedOut = false;
+			GUILayout.BeginHorizontal(GUILayout.Height(height_all_tracks));
+				GUILayout.BeginVertical (GUILayout.Width (width_track));
+					float track_y = 0f;		// the next track's y position
+					// tracks vertical start
+					for(int i=0;i<aData.getCurrentTake().rootGroup.elements.Count;i++) {
+						if(track_y > scrollViewBounds.y) break;	// if start y is beyond max y
+						int id = aData.getCurrentTake().rootGroup.elements[i];
+						float height_group_elements = 0f;
+						showGroupElement(id,0,ref track_y, ref isAnyTrackFoldedOut, ref height_group_elements, e, scrollViewBounds);
+					}
+				// draw element position indicator
+				if(dragType == (int)DragType.GroupElement) {
+					if(mouseOverElement != (int)ElementType.Group && mouseOverElement != (int)ElementType.GroupOutside && mouseOverElement != (int)ElementType.Track) {
+						float element_position_y;
+						if(e.mousePosition.y < (height_menu_bar*2)) element_position_y = 2f;
+						else element_position_y = track_y;
+						GUI.DrawTexture(new Rect(0f,element_position_y-height_element_position,width_track,height_element_position),tex_element_position);			
+					}
+				}
+				GUILayout.EndVertical ();
+				GUILayout.BeginVertical ();
+					// frames vertical	
+					GUILayout.BeginHorizontal (GUILayout.Height (height_track));
+					mouseXOverFrame = (int)aData.getCurrentTake().startFrame+Mathf.CeilToInt((e.mousePosition.x-width_track)/current_width_frame)-1;
+					if(dragType == (int)DragType.CursorHand && justStartedHandGrab) {
+						startScrubFrame = mouseXOverFrame;
+						justStartedHandGrab = false;
+					}
+					track_y = 0f;	// reset track y
+					showFramesForGroup(0,ref track_y,e, birdseye, scrollViewBounds);
+					GUILayout.EndHorizontal();
+				GUILayout.EndVertical();
+			GUILayout.EndHorizontal();
+		GUILayout.EndScrollView();
+		#endregion
+
+
+
+		//
+		//
+		//
+		//
+		//
+		//
+		//
+
+		#region resize track width
+		Rect rectResizeTrack = new Rect(width_track-10f, position.height-height_indicator_footer+2f,15f,15f);
+		GUI.Button(rectResizeTrack,"",GUI.skin.GetStyle("ResizeTrackThumb"));
+		if(rectResizeTrack.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+			mouseOverElement = (int)ElementType.ResizeTrack;
+		}
+		if(GUI.enabled) EditorGUIUtility.AddCursorRect(rectResizeTrack,MouseCursor.ResizeHorizontal);
+		GUI.enabled = (aData.getCurrentTake().rootGroup != null && aData.getCurrentTake().rootGroup.elements.Count > 0 ? !isPlaying : false);
+		#endregion
+
 		#region horizontal scrollbar
 		// check if mouse is over inspector and scroll if dragging
-		if(globalMousePosition.y >= (height_control_bar+height_menu_bar+2f)) {
+		if(globalMousePosition.y >= (2*height_menu_bar+2f)) {
 			difference = 0;
 			// drag right, over inspector
-			if(globalMousePosition.x >= position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-5f) {
-				difference = Mathf.CeilToInt(globalMousePosition.x-(position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-5f));
+			if(globalMousePosition.x >= position.width-5f) {
+				difference = Mathf.CeilToInt(globalMousePosition.x-5f);
 				tickerSpeed = Mathf.Clamp(50-Mathf.CeilToInt(difference/1.5f),1,50);
-				if(!aData.isInspectorOpen) tickerSpeed /= 10;
+				tickerSpeed /= 10;
 				// if mouse over inspector, set mouseOverElement to Other
 				mouseOverElement = (int)ElementType.Other;
 				if(dragType == (int)DragType.MoveSelection || dragType == (int)DragType.ContextSelection || dragType == (int)DragType.ResizeAction) {
@@ -1066,12 +1017,12 @@ public class AMTimeline : EditorWindow {
 				}
 			}
 		}
-		Rect rectHScrollbar = new Rect(width_track+width_playback_controls,position.height-height_indicator_footer+2f,position.width-(width_track+width_playback_controls)-(aData.isInspectorOpen ? width_inspector_open-4f : width_inspector_closed)-21f,height_indicator_footer-2f);
-		float frame_width_HScrollbar = ((rectHScrollbar.width-44f-(aData.isInspectorOpen ? 4f : 0f))/((float)aData.getCurrentTake().numFrames-1f));
+		Rect rectHScrollbar = new Rect(width_track,position.height-height_indicator_footer+2f,position.width-width_track-21f,height_indicator_footer-2f);
+		float frame_width_HScrollbar = ((rectHScrollbar.width-44f)/((float)aData.getCurrentTake().numFrames-1f));
 		Rect rectResizeHScrollbarLeft = new Rect(rectHScrollbar.x+18f+frame_width_HScrollbar*(aData.getCurrentTake().startFrame-1f),rectHScrollbar.y+2f,15f,15f);
 		Rect rectResizeHScrollbarRight = new Rect(rectHScrollbar.x+18f+frame_width_HScrollbar*(aData.getCurrentTake().endFrame-1f)-3f,rectHScrollbar.y+2f,15f,15f);
 		Rect rectHScrollbarThumb = new Rect(rectResizeHScrollbarLeft.x,rectResizeHScrollbarLeft.y-2f,rectResizeHScrollbarRight.x-rectResizeHScrollbarLeft.x+rectResizeHScrollbarRight.width,rectResizeHScrollbarLeft.height);
-		if(!aData.isInspectorOpen) rectHScrollbar.width += 4f;
+		rectHScrollbar.width += 4f;
 		// if number of frames fit on screen, disable horizontal scrollbar and set startframe to 1
 		if(aData.getCurrentTake().numFrames<numFramesToRender) {
 			GUI.HorizontalScrollbar(rectHScrollbar,1f,1f,1f,1f);
@@ -1117,145 +1068,51 @@ public class AMTimeline : EditorWindow {
 		}
 		
 		#endregion
-		#region inspector toggle button
-		Rect rectPropertiesButton = new Rect(position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-1f,height_menu_bar+height_control_bar+2f,width_inspector_closed,position.height);
-		GUI.color = getSkinTextureStyleState("properties_bg").textColor;
-		GUI.DrawTexture(rectPropertiesButton,getSkinTextureStyleState("properties_bg").background);
-		GUI.color = Color.white;
-		// inspector toggle button
-		if(GUI.Button(rectPropertiesButton,"","label")) {
-			aData.isInspectorOpen = !aData.isInspectorOpen;
-		}
-		if(rectPropertiesButton.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
-			mouseOverElement = (int)ElementType.Button;
-		}
-		#endregion
-		#region key numbering
-		Rect rectKeyNumbering = new Rect(width_track,height_control_bar+height_menu_bar+2f-22f,position.width-width_track-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-20f,20f);
-		if(rectKeyNumbering.Contains(e.mousePosition) && (mouseOverElement == (int)ElementType.None)) {
-			mouseOverElement = (int)ElementType.TimelineScrub;
-		}
-		int key_dist = 5;
-		if(numFramesToRender >= 100) key_dist = Mathf.FloorToInt(numFramesToRender/100)*10;
-		int firstMarkedKey = (int)aData.getCurrentTake().startFrame;
-		if(firstMarkedKey % key_dist != 0 && firstMarkedKey != 1) {
-			firstMarkedKey += key_dist-firstMarkedKey % key_dist;
-		}
-		float lastNumberX = -1f;
-		for(int i=firstMarkedKey;i<=(int)aData.getCurrentTake().endFrame;i+=key_dist) {
-				float newKeyNumberX = width_track+current_width_frame*(i-(int)aData.getCurrentTake().startFrame)-1f;
-				string key_number; 
-				if(time_numbering) key_number = frameToTime(i,(float)aData.getCurrentTake().frameRate).ToString("N2");
-				else key_number = i.ToString();
-				Rect rectKeyNumber = new Rect(newKeyNumberX,height_menu_bar,GUI.skin.label.CalcSize(new GUIContent(key_number)).x,height_control_bar);
-				bool didCutLabel = false;
-				if(rectKeyNumber.x+rectKeyNumber.width >= position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-20f) {
-					rectKeyNumber.width = position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-20f-rectKeyNumber.x;
-					didCutLabel = true;
-				}
-				if(!(didCutLabel && aData.getCurrentTake().endFrame==aData.getCurrentTake().numFrames)) {
-					if(rectKeyNumber.x > lastNumberX+3f) {
-						GUI.Label(rectKeyNumber,key_number);
-						lastNumberX = rectKeyNumber.x+GUI.skin.label.CalcSize(new GUIContent(key_number)).x;
-					}
-				}
-				if(i == 1) i--;
-		}
-		#endregion
-		#region main scrollview
-		height_all_tracks = aData.getCurrentTake().getElementsHeight(0,height_track,height_track_foldin,height_group);
-		float height_scrollview = position.height-(height_control_bar+height_menu_bar)-height_indicator_footer;
-		// check if mouse is beyond tracks and dragging group element
-			difference = 0;
-			// drag up
-			if(dragType == (int)DragType.GroupElement && globalMousePosition.y <= height_control_bar+height_menu_bar+2f) {
-				difference = Mathf.CeilToInt((height_control_bar+height_menu_bar+2f)-globalMousePosition.y);
-				scrollAmountVertical = -difference;	// set scroll amount
-			// drag down
-			} else if(dragType == (int)DragType.GroupElement && globalMousePosition.y >= position.height-height_playback_controls) {
-				difference = Mathf.CeilToInt(globalMousePosition.y-(position.height-height_playback_controls));
-				scrollAmountVertical = difference; // set scroll amount
-			} else {
-				scrollAmountVertical = 0f;
-			}
-		// frames bg
-		GUI.DrawTexture(new Rect(0f,height_control_bar+height_menu_bar+2f,position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-5f,position.height-height_control_bar-height_menu_bar-height_indicator_footer),GUI.skin.GetStyle("GroupElementBG").onNormal.background);
-		// tracks bg
-		GUI.Box (new Rect(0f,height_control_bar+height_menu_bar+2f,width_track,position.height-height_control_bar-height_menu_bar-height_indicator_footer),"",GUI.skin.GetStyle("GroupElementBG"));
-		Rect rectScrollView = new Rect(0f,height_control_bar+height_menu_bar+2f,position.width-(aData.isInspectorOpen ? width_inspector_open/*+3f*/ : width_inspector_closed),height_scrollview);
-		Rect rectView = new Rect(0f,0f,rectScrollView.width-20f,(height_all_tracks > rectScrollView.height ? height_all_tracks : rectScrollView.height));
-		scrollViewValue = GUI.BeginScrollView(rectScrollView,scrollViewValue,rectView,false,true);
-			scrollViewValue.y = Mathf.Clamp(scrollViewValue.y, 0f, height_all_tracks-height_scrollview);
-			Vector2 scrollViewBounds = new Vector2(scrollViewValue.y,scrollViewValue.y+height_scrollview); // min and max y displayed onscreen
-			bool isAnyTrackFoldedOut = false;
-			GUILayout.BeginHorizontal(GUILayout.Height(height_all_tracks));
-				GUILayout.BeginVertical (GUILayout.Width (width_track));
-					float track_y = 0f;		// the next track's y position
-					// tracks vertical start
-					for(int i=0;i<aData.getCurrentTake().rootGroup.elements.Count;i++) {
-						if(track_y > scrollViewBounds.y) break;	// if start y is beyond max y
-						int id = aData.getCurrentTake().rootGroup.elements[i];
-						float height_group_elements = 0f;
-						showGroupElement(id,0,ref track_y, ref isAnyTrackFoldedOut, ref height_group_elements, e, scrollViewBounds);
-					}
-				// draw element position indicator
-				if(dragType == (int)DragType.GroupElement) {
-					if(mouseOverElement != (int)ElementType.Group && mouseOverElement != (int)ElementType.GroupOutside && mouseOverElement != (int)ElementType.Track) {
-						float element_position_y;
-						if(e.mousePosition.y < (height_menu_bar+height_control_bar)) element_position_y = 2f;
-						else element_position_y = track_y;
-						GUI.DrawTexture(new Rect(0f,element_position_y-height_element_position,width_track,height_element_position),tex_element_position);			
-					}
-				}
-				GUILayout.EndVertical ();
-				GUILayout.BeginVertical ();
-					// frames vertical	
-					GUILayout.BeginHorizontal (GUILayout.Height (height_track));
-					mouseXOverFrame = (int)aData.getCurrentTake().startFrame+Mathf.CeilToInt((e.mousePosition.x-width_track)/current_width_frame)-1;
-					if(dragType == (int)DragType.CursorHand && justStartedHandGrab) {
-						startScrubFrame = mouseXOverFrame;
-						justStartedHandGrab = false;
-					}
-					track_y = 0f;	// reset track y
-					showFramesForGroup(0,ref track_y,e, birdseye, scrollViewBounds);
-					GUILayout.EndHorizontal();
-				GUILayout.EndVertical();
-			GUILayout.EndHorizontal();
-		GUILayout.EndScrollView();
-		#endregion
-		#region inspector
-		Texture inspectorArrow;
-		if(aData.isInspectorOpen) {
-			Rect rectInspector = new Rect(position.width-width_inspector_open-4f+width_inspector_closed,height_control_bar+height_menu_bar+2f,width_inspector_open,position.height-height_menu_bar-height_control_bar);
-			GUI.BeginGroup(rectInspector);
-				// inspector vertical
-					GUI.enabled = true;
-					GUI.enabled = !isPlaying;
-							// backup editor styles
-							GUIStyle styleEditorTextField = new GUIStyle(EditorStyles.textField);
-							GUIStyle styleEditorLabel = new GUIStyle(EditorStyles.label);
-							// modify editor styles
-							EditorStyles.textField.normal = GUI.skin.textField.normal;
-							EditorStyles.textField.focused = GUI.skin.textField.focused;
-							EditorStyles.label.normal = GUI.skin.label.normal;
-							showInspectorPropertiesFor(rectInspector,aData.getCurrentTake().selectedTrack,aData.getCurrentTake().selectedFrame,e);
-							// reset editor styles
-							EditorStyles.textField.normal = styleEditorTextField.normal;
-							EditorStyles.textField.focused = styleEditorTextField.focused;
-							EditorStyles.label.normal = styleEditorLabel.normal;
-					inspectorArrow = texRightArrow;
-			GUI.EndGroup();
-		} else {
-			GUI.enabled = true;
-			GUI.enabled = !isPlaying;
-			inspectorArrow = texLeftArrow;
-		}
-		GUI.DrawTexture(new Rect(position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)+4f,60f,22f,19f),inspectorArrow);
-		GUI.DrawTexture(new Rect(position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-8f,73f,48f,48f),texProperties);
-		#endregion
+
+		//
+		//
+		//
+		//
+		//
+		//
+
+		
+
+//		#region inspector
+//		Texture inspectorArrow;
+//		if(aData.isInspectorOpen) {
+//			Rect rectInspector = new Rect(position.width-width_inspector_open-4f+width_inspector_closed,height_menu_bar*2+2f,width_inspector_open,position.height-height_menu_bar*2);
+//			GUI.BeginGroup(rectInspector);
+//				// inspector vertical
+//					GUI.enabled = true;
+//					GUI.enabled = !isPlaying;
+//							// backup editor styles
+//							GUIStyle styleEditorTextField = new GUIStyle(EditorStyles.textField);
+//							GUIStyle styleEditorLabel = new GUIStyle(EditorStyles.label);
+//							// modify editor styles
+//							EditorStyles.textField.normal = GUI.skin.textField.normal;
+//							EditorStyles.textField.focused = GUI.skin.textField.focused;
+//							EditorStyles.label.normal = GUI.skin.label.normal;
+//							showInspectorPropertiesFor(rectInspector,aData.getCurrentTake().selectedTrack,aData.getCurrentTake().selectedFrame,e);
+//							// reset editor styles
+//							EditorStyles.textField.normal = styleEditorTextField.normal;
+//							EditorStyles.textField.focused = styleEditorTextField.focused;
+//							EditorStyles.label.normal = styleEditorLabel.normal;
+//					inspectorArrow = texRightArrow;
+//			GUI.EndGroup();
+//		} else {
+//			GUI.enabled = true;
+//			GUI.enabled = !isPlaying;
+//			inspectorArrow = texLeftArrow;
+//		}
+//		GUI.DrawTexture(new Rect(position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)+4f,60f,22f,19f),inspectorArrow);
+//		GUI.DrawTexture(new Rect(position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)-8f,73f,48f,48f),texProperties);
+//		#endregion
+		
 		#region indicator
 		drawIndicator(aData.getCurrentTake().selectedFrame);
 		#endregion
+		
 		#region horizontal scrollbar tooltip
 		string strHScrollbarLeftTooltip = (time_numbering ? frameToTime((int)aData.getCurrentTake().startFrame,(float)aData.getCurrentTake().frameRate).ToString("N2") : aData.getCurrentTake().startFrame.ToString());
 		string strHScrollbarRightTooltip = (time_numbering ? frameToTime((int)aData.getCurrentTake().endFrame,(float)aData.getCurrentTake().frameRate).ToString("N2") : aData.getCurrentTake().endFrame.ToString());
@@ -1273,6 +1130,8 @@ public class AMTimeline : EditorWindow {
 			GUI.Label(new Rect(rectResizeHScrollbarRight.x+rectResizeHScrollbarRight.width/2f-_label_size.x/2f,rectResizeHScrollbarRight.y-22f,_label_size.x,20f),strHScrollbarRightTooltip,GUI.skin.button);	
 		}
 		#endregion
+		
+
 		#region click window
 		if(GUI.Button (new Rect(0f,0f,position.width,position.height),"","label") && dragType != (int)DragType.TimelineScrub && dragType != (int)DragType.ResizeAction) {
 			bool didRegisterUndo = false;
@@ -1303,7 +1162,7 @@ public class AMTimeline : EditorWindow {
 			if(isChangingTimeControl) isChangingTimeControl = false;
 			if(isChangingFrameControl) isChangingFrameControl = false;
 			// if clicked on inspector, do nothing
-			if(e.mousePosition.y > (float)height_menu_bar+(float)height_control_bar && e.mousePosition.x > position.width-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed)) return;
+			if(e.mousePosition.y > (float)height_menu_bar*2 && e.mousePosition.x > position.width) return;
 			if(aData.getCurrentTake().selectedGroup != 0) timelineSelectGroup(0);
 			if(aData.getCurrentTake().selectedTrack != -1) aData.getCurrentTake().selectedTrack = -1;
 			
@@ -1311,6 +1170,8 @@ public class AMTimeline : EditorWindow {
 			
 		}
 		#endregion
+		
+
 		#region drag logic
 		if(dragType == (int)DragType.GroupElement) {
 			// show element near cursor
@@ -1332,13 +1193,12 @@ public class AMTimeline : EditorWindow {
 			if(dragElementIcon) GUI.DrawTexture(new Rect(rectDragElement.x+3f+(draggingGroupElementType == (int)ElementType.Track ? 1.45f : 0f),rectDragElement.y+rectDragElement.height/2-dragElementIconWidth/2,dragElementIconWidth,dragElementIconWidth),dragElementIcon);
 			GUI.Label(new Rect(rectDragElement.x+15f+4f,rectDragElement.y,rectDragElement.width-15f-4f,rectDragElement.height),dragElementName);
 		}
-		mouseAboveGroupElements = e.mousePosition.y < (height_menu_bar+height_control_bar);
+		mouseAboveGroupElements = e.mousePosition.y < (height_menu_bar*2);
 		if(!aData.getCurrentTake().rootGroup || aData.getCurrentTake().rootGroup.elements.Count<=0) {
 			
-			if(aData.isInspectorOpen) aData.isInspectorOpen = false;
-			float width_helpbox = position.width-width_inspector_closed-28f-width_track;
-			EditorGUI.HelpBox(new Rect(width_track+5f,height_menu_bar+height_control_bar+7f,width_helpbox,50f),"Click the track icon below or drag a GameObject here to add a new track.",MessageType.Info);
-			//GUI.DrawTexture(new Rect(width_track+75f,height_menu_bar+height_control_bar+19f-(width_helpbox<=355.5f ? 6f: 0f),15f,15f),tex_icon_track);
+			float width_helpbox = position.width-28f-width_track;
+			EditorGUI.HelpBox(new Rect(width_track+5f,height_menu_bar*2+7f,width_helpbox,50f),"Click the track icon below or drag a GameObject here to add a new track.",MessageType.Info);
+			//GUI.DrawTexture(new Rect(width_track+75f,height_menu_bar*2+19f-(width_helpbox<=355.5f ? 6f: 0f),15f,15f),tex_icon_track);
 		}
 		#endregion
 		#region quick add
@@ -1350,7 +1210,7 @@ public class AMTimeline : EditorWindow {
 		EditorStyles.objectField.onNormal.background = null;
 		
 		GameObject tempGO = null;
-		tempGO = (GameObject) EditorGUI.ObjectField(new Rect(width_track,height_menu_bar+height_control_bar+2f,position.width-5f-15f-width_track-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed),position.height-height_indicator_footer-height_menu_bar-height_control_bar),"",tempGO,typeof(GameObject),true);
+		tempGO = (GameObject) EditorGUI.ObjectField(new Rect(width_track,height_menu_bar*2+2f,position.width-5f-15f-width_track,position.height-height_indicator_footer-height_menu_bar*2),"",tempGO,typeof(GameObject),true);
 
 		if(tempGO != null) {
 			objects_window = new List<GameObject>();
@@ -1370,7 +1230,7 @@ public class AMTimeline : EditorWindow {
 			Vector2 tooltipSize = GUI.skin.label.CalcSize(new GUIContent(tooltip));
 			tooltipSize.x += GUI.skin.button.padding.left + GUI.skin.button.padding.right;
 			tooltipSize.y += GUI.skin.button.padding.top + GUI.skin.button.padding.bottom;
-			Rect rectTooltip = new Rect (e.mousePosition.x-tooltipSize.x/2f, (e.mousePosition.y+30f+tooltipSize.y <= position.height-height_playback_controls ? e.mousePosition.y+30f : e.mousePosition.y-12f-tooltipSize.y), tooltipSize.x, tooltipSize.y);
+			Rect rectTooltip = new Rect (e.mousePosition.x-tooltipSize.x/2f, (e.mousePosition.y+30f+tooltipSize.y <= position.height-height_indicator_footer ? e.mousePosition.y+30f : e.mousePosition.y-12f-tooltipSize.y), tooltipSize.x, tooltipSize.y);
 			GUI.Box (rectTooltip, tooltip, GUI.skin.button);
 		}
 		#endregion
@@ -2253,597 +2113,10 @@ public class AMTimeline : EditorWindow {
 		}
 		GUI.EndGroup();
 	}
+
 	void showInspectorPropertiesFor(Rect rect, int _track, int _frame, Event e) {		
 		// if there are no tracks, return
 		if(aData.getCurrentTake().getTrackCount() <= 0) return;
-			string track_name = "";
-			AMTrack sTrack = null;
-			if(_track > -1) {
-				// get the selected track
-				sTrack = aData.getCurrentTake().getTrack (_track);
-				track_name = sTrack.name + ", ";
-			}
-			GUIStyle styleLabelWordwrap = new GUIStyle(GUI.skin.label);
-			styleLabelWordwrap.wordWrap = true;
-			string strFrameInfo = track_name;
-			if(time_numbering) strFrameInfo += "Time "+frameToTime(_frame,(float)aData.getCurrentTake().frameRate).ToString("N2")+" s";
-			else strFrameInfo += "Frame "+_frame;
-			GUI.Label (new Rect(0f,0f,width_inspector_open-width_inspector_closed-width_button_delete-margin,20f),strFrameInfo,styleLabelWordwrap);
-			Rect rectBtnDeleteKey = new Rect(width_inspector_open-width_inspector_closed-width_button_delete-margin,0f,width_button_delete,height_button_delete);
-			// if frame has no key or isPlaying, return
-			if(_track <= -1 || !sTrack.hasKeyOnFrame(_frame) || isPlaying) {
-				GUI.enabled = false;
-				// disabled delete key button
-				GUI.Button (rectBtnDeleteKey,(getSkinTextureStyleState("delete").background),GUI.skin.GetStyle("ButtonImage"));
-				GUI.enabled = !isPlaying;
-				return;
-			}
-			// delete key button
-			if(GUI.Button (rectBtnDeleteKey,new GUIContent("","Delete Key"),GUI.skin.GetStyle("ButtonImage"))) {
-				deleteKeyFromSelectedFrame();
-				return;
-			}
-			GUI.DrawTexture(new Rect(rectBtnDeleteKey.x+(rectBtnDeleteKey.height-10f)/2f,rectBtnDeleteKey.y+(rectBtnDeleteKey.width-10f)/2f,10f,10f),(getSkinTextureStyleState((rectBtnDeleteKey.Contains(e.mousePosition) ? "delete_hover" : "delete")).background));
-		float width_inspector = width_inspector_open - width_inspector_closed;
-		float start_y = 30f+height_inspector_space;
-		#region translation inspector
-		if(sTrack is AMTranslationTrack) {
-			AMTranslationKey tKey = (AMTranslationKey)(sTrack as AMTranslationTrack).getKeyOnFrame(_frame);
-			// translation interpolation
-				Rect rectLabelInterp = new Rect(0f, start_y, 50f, 20f);
-				GUI.Label(rectLabelInterp,"Interpl.");
-				Rect rectSelGrid = new Rect(rectLabelInterp.x+rectLabelInterp.width+margin,rectLabelInterp.y,width_inspector-rectLabelInterp.width-margin*2f,rectLabelInterp.height);
-				if(tKey.setInterpolation(GUI.SelectionGrid(rectSelGrid,tKey.interp,texInterpl,2,GUI.skin.GetStyle("ButtonImage")))) {
-					sTrack.updateCache();
-					// select the current frame
-					timelineSelectFrame(aData.getCurrentTake().selectedTrack,aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();	
-				}
-			// translation position
-			Rect rectPosition = new Rect(0f,rectSelGrid.y+rectSelGrid.height+height_inspector_space,width_inspector-margin,40f);
-			if(tKey.setPosition(EditorGUI.Vector3Field(rectPosition,"Position",tKey.position))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// preview new position
-				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();
-			}
-			
-			// if not only key, show ease
-			bool isTKeyLastFrame = tKey == (sTrack as AMTranslationTrack).keys[(sTrack as AMTranslationTrack).keys.Count-1];
-
-			if(!isTKeyLastFrame) {
-				Rect recEasePicker = new Rect(0f, rectPosition.y+rectPosition.height+height_inspector_space,width_inspector-margin,0f);
-				if(!isTKeyLastFrame && tKey.interp == (int)AMTranslationKey.Interpolation.Linear) {
-					showEasePicker(sTrack,tKey,aData,recEasePicker.x,recEasePicker.y,recEasePicker.width);
-				} else {
-					showEasePicker(sTrack,(sTrack as AMTranslationTrack).getActionStartKeyFor(tKey.frame),aData,recEasePicker.x,recEasePicker.y,recEasePicker.width);
-				}
-			}
-			return;
-		}
-		#endregion
-		#region rotation inspector
-		if(sTrack is AMRotationTrack) {
-			AMRotationKey rKey = (AMRotationKey)(sTrack as AMRotationTrack).getKeyOnFrame(_frame);
-			Rect rectQuaternion = new Rect(0f,start_y,width_inspector-margin,40f);
-			// quaternion
-			if(rKey.setRotationQuaternion(EditorGUI.Vector4Field(rectQuaternion,"Quaternion",rKey.getRotationQuaternion()))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// preview new position
-				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();
-			}
-			// if not last key, show ease
-			if(rKey != (sTrack as AMRotationTrack).keys[(sTrack as AMRotationTrack).keys.Count-1]) {
-				Rect recEasePicker = new Rect(0f, rectQuaternion.y+rectQuaternion.height+height_inspector_space,width_inspector-margin,0f);
-				if((sTrack as AMRotationTrack).getActionIndexForFrame(_frame)>-1) {
-					showEasePicker(sTrack,rKey,aData,recEasePicker.x,recEasePicker.y,recEasePicker.width);
-				}
-			}
-			return;
-		}
-		#endregion
-		#region orientation inspector
-		if(sTrack is AMOrientationTrack) {
-			AMOrientationKey oKey = (AMOrientationKey)(sTrack as AMOrientationTrack).getKeyOnFrame(_frame);
-			// target
-			Rect rectLabelTarget = new Rect(0f,start_y,50f,22f);
-			GUI.Label(rectLabelTarget, "Target");
-			Rect rectObjectTarget = new Rect(rectLabelTarget.x+rectLabelTarget.width+3f,rectLabelTarget.y+3f,width_inspector-rectLabelTarget.width-3f-margin-width_button_delete,16f);
-			if(oKey.setTarget((Transform)EditorGUI.ObjectField(rectObjectTarget,oKey.target,typeof(Transform),true))) {
-				// update cache when modifying varaibles
-				(sTrack as AMOrientationTrack).updateCache();
-				// preview
-				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();
-			}
-			Rect rectNewTarget = new Rect(width_inspector-width_button_delete-margin,rectLabelTarget.y,width_button_delete,width_button_delete);
-			if(GUI.Button(rectNewTarget, "+")) {
-				GenericMenu addTargetMenu = new GenericMenu();
-				addTargetMenu.AddItem(new GUIContent("With Translation"), false, addTargetWithTranslationTrack, oKey);
-				addTargetMenu.AddItem(new GUIContent("Without Translation"), false, addTargetWithoutTranslationTrack, oKey);
-				addTargetMenu.ShowAsContext();
-			}
-			// if not last key, show ease
-			if(oKey != (sTrack as AMOrientationTrack).keys[(sTrack as AMOrientationTrack).keys.Count-1]) {
-				int oActionIndex = (sTrack as AMOrientationTrack).getActionIndexForFrame(_frame);
-				if(oActionIndex>-1 && (sTrack.cache[oActionIndex] as AMOrientationAction).startTarget != (sTrack.cache[oActionIndex] as AMOrientationAction).endTarget) {
-					Rect recEasePicker = new Rect(0f, rectNewTarget.y+rectNewTarget.height+height_inspector_space,width_inspector-margin,0f);
-					showEasePicker(sTrack,oKey,aData,recEasePicker.x,recEasePicker.y,recEasePicker.width);
-				}
-			}
-			return;
-		}
-		#endregion
-		#region animation inspector
-		if(sTrack is AMAnimationTrack) {
-			AMAnimationKey aKey	= (AMAnimationKey)(sTrack as AMAnimationTrack).getKeyOnFrame(_frame);
-			// animation clip
-			Rect rectLabelAnimClip = new Rect(0f,start_y,100f,22f);
-			GUI.Label(rectLabelAnimClip,"Animation Clip");
-			Rect rectObjectField = new Rect(rectLabelAnimClip.x+rectLabelAnimClip.width+2f,rectLabelAnimClip.y+3f,width_inspector-rectLabelAnimClip.width-margin,16f);
-			if(aKey.setAmClip((AnimationClip)EditorGUI.ObjectField(rectObjectField,aKey.amClip,typeof(AnimationClip),false))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// preview new position
-				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();
-			}
-			// wrap mode
-			Rect rectLabelWrapMode = new Rect(0f,rectLabelAnimClip.y+rectLabelAnimClip.height+height_inspector_space,85f,22f);
-			GUI.Label(rectLabelWrapMode,"Wrap Mode");
-			Rect rectPopupWrapMode = new Rect(rectLabelWrapMode.x+rectLabelWrapMode.width,rectLabelWrapMode.y+3f,120f,22f);
-			if(aKey.setWrapMode(indexToWrapMode(EditorGUI.Popup(rectPopupWrapMode,wrapModeToIndex(aKey.wrapMode),wrapModeNames)))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// preview new position
-				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();
-			}
-			// crossfade
-			Rect rectLabelCrossfade = new Rect(0f,rectLabelWrapMode.y+rectPopupWrapMode.height+height_inspector_space,85f,22f);
-			GUI.Label (rectLabelCrossfade, "Crossfade");
-			Rect rectToggleCrossfade = new Rect(rectLabelCrossfade.x+rectLabelCrossfade.width,rectLabelCrossfade.y+2f,20f,rectLabelCrossfade.height);
-			if(aKey.setCrossFade(EditorGUI.Toggle(rectToggleCrossfade,aKey.crossfade))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// preview new position
-				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();	
-			}
-			Rect rectLabelCrossFadeTime = new Rect(rectToggleCrossfade.x+rectToggleCrossfade.width+10f,rectLabelCrossfade.y,35f,rectToggleCrossfade.height);
-			if(!aKey.crossfade) GUI.enabled = false;
-			GUI.Label(rectLabelCrossFadeTime,"Time");
-			Rect rectFloatFieldCrossFade = new Rect(rectLabelCrossFadeTime.x+rectLabelCrossFadeTime.width+margin,rectLabelCrossFadeTime.y+3f,40f,rectLabelCrossFadeTime.height);
-			if(aKey.setCrossfadeTime(EditorGUI.FloatField(rectFloatFieldCrossFade,aKey.crossfadeTime))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();	
-			}
-			Rect rectLabelSeconds = new Rect(rectFloatFieldCrossFade.x+rectFloatFieldCrossFade.width+margin,rectLabelCrossFadeTime.y,20f,rectLabelCrossFadeTime.height);
-			GUI.Label(rectLabelSeconds,"s");
-			GUI.enabled = true;
-		}
-		#endregion
-		#region audio inspector
-		if(sTrack is AMAudioTrack) {
-			AMAudioKey auKey = (AMAudioKey)(sTrack as AMAudioTrack).getKeyOnFrame(_frame);
-			// audio clip
-			Rect rectLabelAudioClip = new Rect(0f,start_y,80f,22f);
-			GUI.Label(rectLabelAudioClip,"Audio Clip");
-			Rect rectObjectField = new Rect(rectLabelAudioClip.x+rectLabelAudioClip.width+margin,rectLabelAudioClip.y+3f,width_inspector-rectLabelAudioClip.width-margin,16f);
-			if(auKey.setAudioClip((AudioClip)EditorGUI.ObjectField(rectObjectField,auKey.audioClip,typeof(AudioClip),false))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();
-
-			}
-			Rect rectLabelLoop = new Rect(0f,rectLabelAudioClip.y+rectLabelAudioClip.height+height_inspector_space,80f,22f);
-			// loop audio
-			GUI.Label (rectLabelLoop,"Loop");
-			Rect rectToggleLoop = new Rect(rectLabelLoop.x+rectLabelLoop.width+margin,rectLabelLoop.y+2f,22f,22f);
-			if(auKey.setLoop(EditorGUI.Toggle(rectToggleLoop,auKey.loop))) {
-				// update cache when modifying varaibles
-				sTrack.updateCache();
-				// save data
-				setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				// refresh component
-				refreshGizmos();	
-			}
-			return;
-		}
-		#endregion 
-		#region property inspector
-		if(sTrack is AMPropertyTrack) {
-			AMPropertyKey pKey = (AMPropertyKey)(sTrack as AMPropertyTrack).getKeyOnFrame(_frame);
-			// value
-			string propertyLabel = (sTrack as AMPropertyTrack).getTrackType();
-			Rect rectField = new Rect(0f,start_y,width_inspector-margin,22f);
-			#region morph channels
-			if((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.MorphChannels) {
-				Rect rectEasePicker = new Rect(0f,start_y,0f,0f);
-				// ease picker
-				if(pKey != (sTrack as AMPropertyTrack).keys[(sTrack as AMPropertyTrack).keys.Count-1]) {
-					rectEasePicker.width = width_inspector-margin;
-					rectEasePicker.height = 22f;
-					showEasePicker(sTrack,pKey,aData,rectEasePicker.x,rectEasePicker.y,rectEasePicker.width);
-				}
-				string[] channelNames = (sTrack as AMPropertyTrack).getMorphNames();
-				int numChannels = channelNames.Length;
-				float scrollview_y = rectEasePicker.y+rectEasePicker.height+height_inspector_space;
-				Rect rectMorphScrollView = new Rect(0f,scrollview_y,width_inspector-margin,rect.height-scrollview_y);
-				Rect rectMorphView = new Rect(0f,0f,rectMorphScrollView.width-20f,numChannels*44f+(numChannels)*height_inspector_space);
-				inspectorScrollView = GUI.BeginScrollView(rectMorphScrollView,inspectorScrollView,rectMorphView);
-						List<float> megaMorphChannels = new List<float>(pKey.morph);
-						int indexChannel = -1;	// channel to set to 100, all others to 0
-						Rect rectMorphLabel = new Rect(0f,0f,100f,22f);
-						Rect rectMorphSelectButton = new Rect(width_inspector-margin-18f-(rectMorphView.height>rectMorphScrollView.height ? 20f : 0f),0f,18f,16f);
-						Rect rectMorphFloatField = new Rect(rectMorphSelectButton.x-50f-margin,0f,50f,22f);
-						Rect rectMorphSlider = new Rect(0f,0f,width_inspector-margin*3f-rectMorphFloatField.width-rectMorphSelectButton.width-(rectMorphView.height>rectMorphScrollView.height ? 20f : 0f),22f);
-						for(int k=0;k<numChannels;k++) {
-							if(megaMorphChannels.Count <= k) megaMorphChannels.Add(0f);
-							// label
-							if(k>0) rectMorphLabel.y += 44f+height_inspector_space;
-							GUI.Label(rectMorphLabel, k+" - "+channelNames[k]);
-							// slider
-							rectMorphSlider.y = rectMorphLabel.y+22f;
-							megaMorphChannels[k] = GUI.HorizontalSlider(rectMorphSlider, megaMorphChannels[k],0f,100f);
-							// float field
-							rectMorphFloatField.y = rectMorphSlider.y;
-							megaMorphChannels[k] = EditorGUI.FloatField(rectMorphFloatField,"",megaMorphChannels[k]);
-							megaMorphChannels[k] = Mathf.Clamp(megaMorphChannels[k],0f,100f);
-							// select this button
-							rectMorphSelectButton.y = rectMorphSlider.y;
-							if(GUI.Button(rectMorphSelectButton,"")) indexChannel = k;
-							Rect rectTextureSelectThis = new Rect(rectMorphSelectButton);
-							rectTextureSelectThis.x += 3f;
-							rectTextureSelectThis.width -= 5f;
-							rectTextureSelectThis.y += 3f;
-							rectTextureSelectThis.height -= 6f;
-							GUI.DrawTexture(rectTextureSelectThis,getSkinTextureStyleState("select_this").background);
-						}
-						if(indexChannel != -1) {
-							registerUndo("Set Morph");
-							// set value
-							if(megaMorphChannels[indexChannel] != 100f) {
-								megaMorphChannels[indexChannel] = 100f;
-							} else {
-							// select exclusive
-								for(int k=0;k<numChannels;k++) {
-									if(k != indexChannel) megaMorphChannels[k] = 0f;
-								}
-							}
-						}
-						megaMorphChannels = megaMorphChannels.GetRange(0,numChannels);
-						if(pKey.setValueMegaMorph(megaMorphChannels)) {
-							// update cache when modifying varaibles
-							sTrack.updateCache();
-							// preview new value
-							aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-							// save data
-							setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-							setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-							// refresh component
-							refreshGizmos();	
-						}
-				GUI.EndScrollView();
-			#endregion
-			// int value
-			} else if(((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Integer) || ((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Long)) {
-				if(pKey.setValue(EditorGUI.IntField(rectField,propertyLabel,Convert.ToInt32(pKey.val)))) {
-					// update cache when modifying varaibles
-					sTrack.updateCache();
-					// preview new value
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();	
-				}
-			} else if(((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Float)||((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Double)) {
-				if(pKey.setValue(EditorGUI.FloatField(rectField,propertyLabel,(float)(pKey.val)))) {
-					// update cache when modifying varaibles
-					sTrack.updateCache();
-					// preview new value
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();	
-				}
-			} else if((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Vector2) {
-				rectField.height = 40f;
-				if(pKey.setValue(EditorGUI.Vector2Field(rectField,propertyLabel,pKey.vect2))) {
-					// update cache when modifying varaibles
-					sTrack.updateCache();
-					// preview new value
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();	
-				}
-			} else if((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Vector3) {
-				rectField.height = 40f;
-				if(pKey.setValue(EditorGUI.Vector3Field(rectField,propertyLabel,pKey.vect3))) {
-					// update cache when modifying varaibles
-					sTrack.updateCache();
-					// preview new value
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();	
-				}
-			} else if((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Color) {
-				rectField.height = 22f;
-				if(pKey.setValue(EditorGUI.ColorField(rectField,propertyLabel,pKey.color))) {
-					// update cache when modifying varaibles
-					sTrack.updateCache();
-					// preview new value
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();	
-				}
-			}else if((sTrack as AMPropertyTrack).valueType == (int) AMPropertyTrack.ValueType.Rect) {
-				rectField.height = 60f;
-				if(pKey.setValue(EditorGUI.RectField(rectField,propertyLabel,pKey.rect))) {
-					// update cache when modifying varaibles
-					sTrack.updateCache();
-					// preview new value
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();	
-				}
-			}
-			// property ease, show if not last key (check for action; there is no rotation action for last key). do not show for morph channels, because it is shown before the parameters
-			if((sTrack as AMPropertyTrack).valueType != (int)AMPropertyTrack.ValueType.MorphChannels && pKey != (sTrack as AMPropertyTrack).keys[(sTrack as AMPropertyTrack).keys.Count-1]) {
-				Rect rectEasePicker = new Rect(0f,rectField.y+rectField.height+height_inspector_space,width_inspector-margin,0f);
-				showEasePicker(sTrack,pKey,aData,rectEasePicker.x,rectEasePicker.y,rectEasePicker.width);
-			}
-			return;
-		}
-		#endregion
-		#region event inspector
-		if(sTrack is AMEventTrack) {
-			AMEventKey eKey = (AMEventKey)(sTrack as AMEventTrack).getKeyOnFrame(_frame);
-			// value
-				if(indexMethodInfo == -1 || cachedMethodInfo.Count<=0) {
-					Rect rectLabel = new Rect(0f,start_y,width_inspector-margin*2f-20f,22f);
-					GUI.Label(rectLabel,"No usable methods found.");
-					Rect rectButton = new Rect(width_inspector-20f-margin,start_y+1f,20f,20f);
-					if(GUI.Button(rectButton,"?")) {
-						EditorUtility.DisplayDialog("Usable Methods","Methods should be made public and be placed in scripts that are not directly derived from Component or Behaviour to be used in the Event Track (MonoBehaviour is fine).","Okay");
-					}	
-					return;
-				}
-				Rect rectPopup = new Rect(0f,start_y,width_inspector-margin,22f);
-				indexMethodInfo = EditorGUI.Popup(rectPopup,indexMethodInfo,getMethodNames());
-				// if index out of range
-				if((indexMethodInfo < cachedMethodInfo.Count)) {
-					// process change
-					if(eKey.setMethodInfo(cachedMethodInfoComponents[indexMethodInfo],cachedMethodInfo[indexMethodInfo],cachedParameterInfos)) {						// update cache when modifying varaibles
-						sTrack.updateCache();
-						// save data
-						setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-						setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-						// deselect fields
-						GUIUtility.keyboardControl = 0;	
-					}
-				}
-				if(cachedParameterInfos.Length > 1) {
-					// if method has more than 1 parameter, set sendmessage to false, and disable toggle
-					if(eKey.setUseSendMessage(false)) {
-						sTrack.updateCache();
-						// save data
-						setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-						setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					}
-					GUI.enabled = false;	// disable sendmessage toggle
-				}
-				bool showObjectMessage = false;
-				Type showObjectType = null;
-				foreach(ParameterInfo p in cachedParameterInfos) {
-					Type elemType = p.ParameterType.GetElementType();
-					if(elemType != null && (elemType.BaseType == typeof(UnityEngine.Object) || elemType.BaseType == typeof(UnityEngine.Behaviour))) {
-						showObjectMessage = true;
-						showObjectType = elemType;
-						break;
-					}
-				}
-				Rect rectLabelObjectMessage = new Rect(0f,rectPopup.y+rectPopup.height,width_inspector-margin*2f-20f,0f);
-				if(showObjectMessage) {
-					rectLabelObjectMessage.height = 22f;
-					Rect rectButton = new Rect(width_inspector-20f-margin,rectLabelObjectMessage.y+1f,20f,20f);
-					GUI.color = Color.red;
-					GUI.Label (rectLabelObjectMessage,"* Use Object[] instead!");
-					GUI.color = Color.white;
-					if(GUI.Button (rectButton,"?")) {
-						EditorUtility.DisplayDialog("Use Object[] Parameter Instead","Array types derived from Object, such as GameObject[], cannot be cast correctly on runtime.\n\nUse UnityEngine.Object[] as a parameter type and then cast to (GameObject[]) in your method.\n\nIf you're trying to pass components"+(showObjectType != typeof(GameObject) ? " (such as "+showObjectType.ToString()+")":"")+", you should get them from the casted GameObjects on runtime.\n\nPlease see the documentation for more information.","Okay");
-					}
-					
-				}
-				Rect rectLabelSendMessage = new Rect(0f,rectLabelObjectMessage.y+rectLabelObjectMessage.height+height_inspector_space,150f,20f);
-				GUI.Label (rectLabelSendMessage,"Use SendMessage");
-				Rect rectToggleSendMessage = new Rect(rectLabelSendMessage.x+rectLabelSendMessage.width+margin,rectLabelSendMessage.y,20f,20f);
-				if(eKey.setUseSendMessage(GUI.Toggle(rectToggleSendMessage,eKey.useSendMessage,""))) {
-					sTrack.updateCache();
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-				}
-				GUI.enabled = !isPlaying;
-				Rect rectButtonSendMessageInfo = new Rect(width_inspector-20f-margin,rectLabelSendMessage.y,20f,20f);
-				if(GUI.Button (rectButtonSendMessageInfo,"?")) {
-					EditorUtility.DisplayDialog("SendMessage vs. Invoke","SendMessage can only be used with methods that have no more than one parameter (which can be an array).\n\nAnimator will use Invoke when SendMessage is disabled, which is slightly faster but requires caching when the take is played. Use SendMessage if caching is a problem.","Okay");
-				}
-				if(cachedParameterInfos.Length > 0) {
-					// show method parameters
-					float scrollview_y = rectLabelSendMessage.y+rectLabelSendMessage.height+height_inspector_space;
-					Rect rectScrollView = new Rect(0f,scrollview_y,width_inspector-margin,rect.height-scrollview_y);
-					float width_view = width_inspector-margin-(height_event_parameters > rectScrollView.height ? 20f+margin : 0f);
-					Rect rectView = new Rect(0f,0f,width_view,height_event_parameters);
-					inspectorScrollView = GUI.BeginScrollView(rectScrollView,inspectorScrollView,rectView);
-					Rect rectField = new Rect(0f, 0f, width_view,20f);
-					float height_all_fields = 0f;
-					// there are parameters
-					for(int i=0;i<cachedParameterInfos.Length;i++) {
-						rectField.y += height_inspector_space;
-						if(i > 0) height_all_fields += height_inspector_space;
-						// show field for each parameter
-						float height_field = 0f;
-						if(showFieldFor(rectField, i.ToString(),cachedParameterInfos[i].Name,eKey.parameters[i],cachedParameterInfos[i].ParameterType, 0, ref height_field)) {
-							sTrack.updateCache();
-							// save data
-							setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-							setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-						}
-						rectField.y += height_field;
-						height_all_fields += height_field;
-					}
-					GUI.EndScrollView();
-					height_all_fields += height_inspector_space;
-					if(height_event_parameters != height_all_fields) height_event_parameters = height_all_fields;
-				}
-			return;
-		}
-		#endregion
-		#region camerea switcher inspector
-		if(sTrack is AMCameraSwitcherTrack) {
-			AMCameraSwitcherKey cKey = (AMCameraSwitcherKey)(sTrack as AMCameraSwitcherTrack).getKeyOnFrame(_frame);
-			bool showExtras = false;
-			bool notLastKey = cKey != (sTrack as AMCameraSwitcherTrack).keys[(sTrack as AMCameraSwitcherTrack).keys.Count-1];
-			if(notLastKey) {
-				int cActionIndex = (sTrack as AMCameraSwitcherTrack).getActionIndexForFrame(_frame);
-				showExtras = cActionIndex>-1 && !(sTrack.cache[cActionIndex] as AMCameraSwitcherAction).targetsAreEqual();
-			}
-			float height_cs = 44f+height_inspector_space + (showExtras ? 22f*3f+height_inspector_space*3f : 0f);
-			Rect rectScrollView = new Rect(0f,start_y,width_inspector-margin,rect.height-start_y);
-			Rect rectView = new Rect(0f,0f,rectScrollView.width-(height_cs > rectScrollView.height ? 20f : 0f),height_cs);
-			inspectorScrollView = GUI.BeginScrollView(rectScrollView,inspectorScrollView,rectView);
-			Rect rectLabelType = new Rect(0f,0f,56f,22f);
-			GUI.Label(rectLabelType,"Type");
-			Rect rectSelGridType = new Rect(rectLabelType.x+rectLabelType.width+margin,rectLabelType.y,rectView.width-margin-rectLabelType.width,22f);
-			if(cKey.setType(GUI.SelectionGrid(rectSelGridType,cKey.type,new string[]{"Camera", "Color"},2))) {
-				// update cache when modifying varaibles
-					(sTrack as AMCameraSwitcherTrack).updateCache();
-					// preview
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();
-			}
-			// camera
-			Rect rectLabelCameraColor = new Rect(0f,rectLabelType.y+rectLabelType.height+height_inspector_space,56f,22f);
-			GUI.Label(rectLabelCameraColor,(cKey.type == 0 ? "Camera" : "Color"));
-			Rect rectCameraColor = new Rect(rectLabelCameraColor.x+rectLabelCameraColor.width+margin,rectLabelCameraColor.y+3f,rectView.width-rectLabelCameraColor.width-margin,16f);
-			if(cKey.type == 0) {
-				if(cKey.setCamera((Camera)EditorGUI.ObjectField(rectCameraColor,cKey.camera,typeof(Camera),true))) {
-					// update cache when modifying varaibles
-					(sTrack as AMCameraSwitcherTrack).updateCache();
-					// preview
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();
-				}
-			} else {
-				if(cKey.setColor(EditorGUI.ColorField(rectCameraColor,cKey.color))) {
-					// update cache when modifying varaibles
-					(sTrack as AMCameraSwitcherTrack).updateCache();
-					// preview
-					aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-					// save data
-					setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-					// refresh component
-					refreshGizmos();
-				}
-			}
-			GUI.enabled = true;
-			// if not last key, show transition and ease
-			if(notLastKey && showExtras) {
-				// transition picker
-				Rect rectTransitionPicker = new Rect(0f,rectLabelCameraColor.y+rectLabelCameraColor.height+height_inspector_space,rectView.width,22f);
-				showTransitionPicker(sTrack,cKey,rectTransitionPicker.x,rectTransitionPicker.y,rectTransitionPicker.width);
-				if(cKey.cameraFadeType != (int)AMTween.Fade.None) {
-					// ease picker
-					Rect rectEasePicker = new Rect(0f,rectTransitionPicker.y+rectTransitionPicker.height+height_inspector_space,rectView.width,22f);
-					showEasePicker(sTrack,cKey,aData,rectEasePicker.x,rectEasePicker.y,rectEasePicker.width);
-					// render texture
-					Rect rectLabelRenderTexture = new Rect(0f,rectEasePicker.y+rectEasePicker.height+height_inspector_space,175f,22f);
-					GUI.Label(rectLabelRenderTexture,"Render Texture (Pro Only)");
-					Rect rectToggleRenderTexture = new Rect(rectView.width-22f,rectLabelRenderTexture.y,22f,22f);
-					if(cKey.setStill(!GUI.Toggle(rectToggleRenderTexture,!cKey.still,""))) {
-						// update cache when modifying varaibles
-						(sTrack as AMCameraSwitcherTrack).updateCache();
-						// preview
-						aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-						// save data
-						setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-						setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-						// refresh component
-						refreshGizmos();
-					}
-				}
-			}
-			GUI.EndScrollView();
-			return;
-		}
-		#endregion
 	}
 	
 	bool showFieldFor(Rect rect, string id, string name, AMEventParameter parameter, Type t, int level, ref float height_field) {
@@ -3148,7 +2421,7 @@ public class AMTimeline : EditorWindow {
 			int index = 0;
 
 			GUI.Label (rectLabel, "Fade");
-			Rect rectPopup = new Rect(rectLabel.x + rectLabel.width + 2f, y+3f, width - rectLabel.width - width_button_delete -3f, height);
+			Rect rectPopup = new Rect(rectLabel.x + rectLabel.width + 2f, y+3f, width - rectLabel.width - width_button -3f, height);
 			for(int i=0;i<AMTween.TransitionOrder.Length;i++) {
 				if(AMTween.TransitionOrder[i] == key.cameraFadeType) {
 					index = i;
@@ -3169,7 +2442,7 @@ public class AMTimeline : EditorWindow {
 				AMTransitionPicker.refreshValues();
 				// refresh code view
 			}
-			Rect rectButton = new Rect(width-width_button_delete+1f,y,width_button_delete,width_button_delete);
+			Rect rectButton = new Rect(width-width_button+1f,y,width_button,width_button);
 			if(GUI.Button(rectButton, getSkinTextureStyleState("popup").background,GUI.skin.GetStyle("ButtonImage"))) {
 				AMTransitionPicker.setValues(key, track);
 				EditorWindow.GetWindow (typeof (AMTransitionPicker));
@@ -3204,7 +2477,7 @@ public class AMTimeline : EditorWindow {
 					}
 			
 				GUILayout.EndVertical();
-				if(GUILayout.Button(getSkinTextureStyleState("popup").background,GUI.skin.GetStyle("ButtonImage"),GUILayout.Width(width_button_delete),GUILayout.Height(width_button_delete))) {
+				if(GUILayout.Button(getSkinTextureStyleState("popup").background,GUI.skin.GetStyle("ButtonImage"),GUILayout.Width(width_button),GUILayout.Height(width_button))) {
 					AMTransitionPicker.setValues(key, track);
 					EditorWindow.GetWindow (typeof (AMTransitionPicker));
 				}
@@ -3219,7 +2492,7 @@ public class AMTimeline : EditorWindow {
 			float height = 22f;
 			Rect rectLabel = new Rect(x, y-1f, 40f, height);
 			GUI.Label (rectLabel, "Ease");
-			Rect rectPopup = new Rect(rectLabel.x + rectLabel.width + 2f, y+3f, width - rectLabel.width - width_button_delete -3f, height);
+			Rect rectPopup = new Rect(rectLabel.x + rectLabel.width + 2f, y+3f, width - rectLabel.width - 25f, height);
 			if(key.setEaseType(EditorGUI.Popup(rectPopup,key.easeType,easeTypeNames))) {
 				// update cache when modifying varaibles
 				track.updateCache();
@@ -3232,7 +2505,7 @@ public class AMTimeline : EditorWindow {
 				// refresh values
 				AMEasePicker.refreshValues();
 			}
-			Rect rectButton = new Rect(width-width_button_delete+1f,y,width_button_delete,width_button_delete);
+			Rect rectButton = new Rect(width-21f,y,22f,22f);
 			if(GUI.Button(rectButton, getSkinTextureStyleState("popup").background,GUI.skin.GetStyle("ButtonImage"))) {
 				AMEasePicker.setValues(/*aData,*/key, track);
 				EditorWindow.GetWindow (typeof (AMEasePicker));
@@ -3258,7 +2531,7 @@ public class AMTimeline : EditorWindow {
 						AMEasePicker.refreshValues();
 					}
 				GUILayout.EndVertical();
-				if(GUILayout.Button(getSkinTextureStyleState("popup").background,GUI.skin.GetStyle("ButtonImage"),GUILayout.Width(width_button_delete),GUILayout.Height(width_button_delete))) {
+				if(GUILayout.Button(getSkinTextureStyleState("popup").background,GUI.skin.GetStyle("ButtonImage"),GUILayout.Width(22f),GUILayout.Height(22f))) {
 					AMEasePicker.setValues(/*aData,*/key, track);
 					EditorWindow.GetWindow (typeof (AMEasePicker));
 				}
@@ -3535,7 +2808,7 @@ public class AMTimeline : EditorWindow {
 				if(mouseXOverHScrollbarFrame <= 0) aData.getCurrentTake().endFrame = 1;
 				else if(mouseXOverHScrollbarFrame > aData.getCurrentTake().numFrames) aData.getCurrentTake().endFrame = aData.getCurrentTake().numFrames;
 				else aData.getCurrentTake().endFrame = mouseXOverHScrollbarFrame;
-				int min = Mathf.FloorToInt((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/(height_track-height_action_min));
+				int min = Mathf.FloorToInt((position.width-width_track-18f)/(height_track-height_action_min));
 				if(aData.getCurrentTake().startFrame > aData.getCurrentTake().endFrame-min) aData.getCurrentTake().startFrame = aData.getCurrentTake().endFrame-min;
 			#endregion
 			#region cursor zoom
@@ -3686,7 +2959,7 @@ public class AMTimeline : EditorWindow {
 		if(window) window.cachedZoom = -1f;
 	}
 	void calculateNumFramesToRender(bool clickedZoom, Event e) {
-		int min = Mathf.FloorToInt((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/(height_track-height_action_min));
+		int min = Mathf.FloorToInt((position.width-width_track-18f)/(height_track-height_action_min));
 		int _mouseXOverFrame =(int) aData.getCurrentTake().startFrame+Mathf.CeilToInt((e.mousePosition.x-width_track)/current_width_frame)-1;
 		// move frames with hand cursor
 		if(dragType == (int)DragType.CursorHand && !justStartedHandGrab) {
@@ -3708,7 +2981,7 @@ public class AMTimeline : EditorWindow {
 			//numFramesToRender
 			numFramesToRender = AMTween.easeInExpo(0f,1f,aData.zoom)*((float)aData.getCurrentTake().numFrames-min)+min;
 			// frame dimensions
-			current_width_frame = Mathf.Clamp((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/numFramesToRender,0f,(height_track-height_action_min));
+			current_width_frame = Mathf.Clamp((position.width-width_track-18f)/numFramesToRender,0f,(height_track-height_action_min));
 			current_height_frame = Mathf.Clamp(current_width_frame*2f,20f,40f);
 			float half = 0f;
 			// zoom out			
@@ -3786,7 +3059,7 @@ public class AMTimeline : EditorWindow {
 		if(aData.getCurrentTake().endFrame > aData.getCurrentTake().numFrames) aData.getCurrentTake().endFrame = aData.getCurrentTake().numFrames;
 		if(aData.getCurrentTake().startFrame > aData.getCurrentTake().endFrame-min) aData.getCurrentTake().startFrame = aData.getCurrentTake().endFrame-min;
 		numFramesToRender = aData.getCurrentTake().endFrame-aData.getCurrentTake().startFrame+1;
-		current_width_frame = Mathf.Clamp((position.width-width_track-18f-(aData.isInspectorOpen ? width_inspector_open : width_inspector_closed))/numFramesToRender,0f,(height_track-height_action_min));
+		current_width_frame = Mathf.Clamp((position.width-width_track-18f)/numFramesToRender,0f,(height_track-height_action_min));
 		current_height_frame = Mathf.Clamp(current_width_frame*2f,20f,40f);
 		if(dragType == (int)DragType.ResizeHScrollbarLeft || dragType == (int)DragType.ResizeHScrollbarRight) {
 			aData.zoom = AMTween.easeInExpoReveresed(0f,1f,(numFramesToRender-min)/((float)aData.getCurrentTake().numFrames-min));

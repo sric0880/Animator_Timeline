@@ -22,7 +22,6 @@ public class AnimatorData : MonoBehaviour {
 		}
 	}
 	[HideInInspector] public bool isAnimatorOpen = false;
-	[HideInInspector] public bool isInspectorOpen = false;
 	[HideInInspector] public bool inPlayMode = false;
 	[HideInInspector] public float zoom = 0.4f;
 	[HideInInspector] public int currentTake;
