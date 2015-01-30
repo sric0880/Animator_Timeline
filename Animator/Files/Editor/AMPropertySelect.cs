@@ -231,7 +231,6 @@ public class AMPropertySelect : EditorWindow {
 		}
 		if(changePropertyValue) {
 			
-			AMTimeline.registerUndo("Set Property");
 			// delete keys
 			if(track.keys.Count > 0) {
 				track.deleteAllKeys();

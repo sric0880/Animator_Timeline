@@ -45,10 +45,6 @@ public class AMSettings : EditorWindow {
 		}
 	}
 	void OnGUI() {		
-		if(!aData) {
-			AMTimeline.MessageBox("Animator requires an AnimatorData component in your scene. Launch Animator to add the component.",AMTimeline.MessageBoxType.Warning);
-			return;
-		}
 		GUILayout.BeginVertical();
 		numFrames = EditorGUILayout.IntField("Number of Frames:", numFrames);
 		if(numFrames <= 0) numFrames = 1;
@@ -56,7 +52,6 @@ public class AMSettings : EditorWindow {
 		if(frameRate <= 0) frameRate = 1;
 		GUILayout.BeginHorizontal();
 			if(GUILayout.Button("Apply")) {
-				Undo.RegisterSceneUndo("Modify Settings");
 				saveChanges = true;
 				this.Close();	
 			}
@@ -67,21 +62,18 @@ public class AMSettings : EditorWindow {
 		GUILayout.EndHorizontal();
 		GUILayout.EndVertical();
 	}
-	void OnHierarchyChange()
-	{
-		if(!aData) loadAnimatorData();
-	}
-	public void reloadAnimatorData() {
-		aData = null;
-		loadAnimatorData();
-	}
+//	void OnHierarchyChange()
+//	{
+//		if(!aData) loadAnimatorData();
+//	}
+//	public void reloadAnimatorData() {
+//		aData = null;
+//		loadAnimatorData();
+//	}
 	void loadAnimatorData()
 	{
-		GameObject go = GameObject.Find ("AnimatorData");
-		if(go) {
-			aData = (AnimatorData) go.GetComponent ("AnimatorData");
-			numFrames = aData.getCurrentTake().numFrames;
-			frameRate = aData.getCurrentTake().frameRate;
-		}
+		aData = AMTimeline.window.aData;
+		numFrames = aData.getCurrentTake().numFrames;
+		frameRate = aData.getCurrentTake().frameRate;
 	}
 }

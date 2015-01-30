@@ -205,45 +205,46 @@ public class AMTransitionPicker : EditorWindow {
 						GUI.color = Color.white;
 					}
 					#endregion
-					#region playback controls
-					// time bar
-					Rect rectTimeBar = new Rect(0f, y_preview_texture + height_preview_max+2f+4f, rectArea.width-(18f*3f+2f*4f),10f);
-					GUI.color = GUI.skin.window.hover.textColor;
-					GUI.DrawTexture(rectTimeBar, EditorGUIUtility.whiteTexture);
-					Rect rectCurrentTime = new Rect(rectTimeBar);
-					rectCurrentTime.width = Mathf.Clamp(rectCurrentTime.width*percent, 0f, rectTimeBar.width);
-					GUI.color = AMTimeline.getSkinTextureStyleState("properties_bg").textColor;
-					GUI.DrawTexture(rectCurrentTime, EditorGUIUtility.whiteTexture);
-					GUI.color = Color.white;
-					if(GUI.Button(rectTimeBar, "", "label") || dragType == (int)DragType.Seek) {
-						percent = (e.mousePosition.x-rectTimeBar.x)/rectTimeBar.width;
-						updateValue();
-					}
-					if(rectTimeBar.Contains(e.mousePosition)) {
-						mouseOverElement = (int)ElementType.TimeBar;
-					}
-					// last frame button
-					Rect rectPlaybackButton = new Rect(rectArea.width-18f-2f,y_preview_texture+height_preview_max+2f,18f,18f);
 
-					if(GUI.Button(rectPlaybackButton,AMTimeline.getSkinTextureStyleState("nav_skip_forward").background,GUI.skin.GetStyle("ButtonImage"))) {
-						percent = 1f;
-						updateValue();
-					}
-					rectPlaybackButton.x -= (18f+2f);
-					// play / pause button
-					Texture playToggleTexture;
-					if(isPlaying) playToggleTexture = AMTimeline.getSkinTextureStyleState("nav_stop_white").background;
-					else playToggleTexture = AMTimeline.getSkinTextureStyleState("nav_play").background;
-					if(GUI.Button(rectPlaybackButton,playToggleTexture,GUI.skin.GetStyle("ButtonImage"))) {
-						isPlaying = !isPlaying;
-					}
-					rectPlaybackButton.x -= (18f+2f);
-					// first frame button
-					if(GUI.Button(rectPlaybackButton,AMTimeline.getSkinTextureStyleState("nav_skip_back").background,GUI.skin.GetStyle("ButtonImage"))) {
-						percent = 0f;
-						updateValue();
-					}
-					#endregion
+		//TODO undo
+//					#region playback controls
+//					// time bar
+//					Rect rectTimeBar = new Rect(0f, y_preview_texture + height_preview_max+2f+4f, rectArea.width-(18f*3f+2f*4f),10f);
+//					GUI.color = GUI.skin.window.hover.textColor;
+//					GUI.DrawTexture(rectTimeBar, EditorGUIUtility.whiteTexture);
+//					Rect rectCurrentTime = new Rect(rectTimeBar);
+//					rectCurrentTime.width = Mathf.Clamp(rectCurrentTime.width*percent, 0f, rectTimeBar.width);
+//					GUI.DrawTexture(rectCurrentTime, EditorGUIUtility.whiteTexture);
+//					GUI.color = Color.white;
+//					if(GUI.Button(rectTimeBar, "", "label") || dragType == (int)DragType.Seek) {
+//						percent = (e.mousePosition.x-rectTimeBar.x)/rectTimeBar.width;
+//						updateValue();
+//					}
+//					if(rectTimeBar.Contains(e.mousePosition)) {
+//						mouseOverElement = (int)ElementType.TimeBar;
+//					}
+//					// last frame button
+//					Rect rectPlaybackButton = new Rect(rectArea.width-18f-2f,y_preview_texture+height_preview_max+2f,18f,18f);
+//
+//					if(GUI.Button(rectPlaybackButton,AMTimeline.getSkinTextureStyleState("nav_skip_forward").background,GUI.skin.GetStyle("ButtonImage"))) {
+//						percent = 1f;
+//						updateValue();
+//					}
+//					rectPlaybackButton.x -= (18f+2f);
+//					// play / pause button
+//					Texture playToggleTexture;
+//					if(isPlaying) playToggleTexture = AMTimeline.getSkinTextureStyleState("nav_stop_white").background;
+//					else playToggleTexture = AMTimeline.getSkinTextureStyleState("nav_play").background;
+//					if(GUI.Button(rectPlaybackButton,playToggleTexture,GUI.skin.GetStyle("ButtonImage"))) {
+//						isPlaying = !isPlaying;
+//					}
+//					rectPlaybackButton.x -= (18f+2f);
+//					// first frame button
+//					if(GUI.Button(rectPlaybackButton,AMTimeline.getSkinTextureStyleState("nav_skip_back").background,GUI.skin.GetStyle("ButtonImage"))) {
+//						percent = 0f;
+//						updateValue();
+//					}
+//					#endregion
 					#region preview hover controls
 					if(dragType == (int)DragType.None && rectPreviewTextureFull.Contains(e.mousePosition)) {
 						Vector2 v = new Vector2(-1f,-1f);
@@ -306,7 +307,6 @@ public class AMTransitionPicker : EditorWindow {
 			Rect rectShowHideButton = new Rect(width_transition_list_closed-36f,0f,56f,height_toggle_button);
 			bool shouldMakeTransparent = (!showTransitionList && !rectShowHideButton.Contains(e.mousePosition));
 			//GUI.color = new Color(31f/255f,37f/255f,45f/255f,(shouldMakeTransparent ? .5f : 1f));
-			GUI.color = AMTimeline.getSkinTextureStyleState("properties_bg").textColor;
 			GUI.color = new Color(GUI.color.r,GUI.color.g,GUI.color.b, (shouldMakeTransparent ? .5f : 1f));
 			Rect rectToggleBGFade = new Rect(width_transition_list_closed-24f,0f,27f,position.height);
 			GUI.DrawTexture(rectToggleBGFade,tex_transition_toggle_bg);
@@ -334,9 +334,10 @@ public class AMTransitionPicker : EditorWindow {
 								searchString = GUILayout.TextField(searchString, GUILayout.Width(70f));
 							GUILayout.EndVertical();
 							Rect rectClearButton = new Rect(position.width-24f,GUILayoutUtility.GetLastRect().y+4f,15f,15f);
-							if(GUI.Button(rectClearButton,AMTimeline.getSkinTextureStyleState("x").background,GUI.skin.GetStyle("ButtonImage"))) {
-								searchString = "";
-							}
+			//TODO undo
+//							if(GUI.Button(rectClearButton,AMTimeline.getSkinTextureStyleState("x").background,GUI.skin.GetStyle("ButtonImage"))) {
+//								searchString = "";
+//							}
 						GUILayout.EndHorizontal();
 						GUILayout.FlexibleSpace();
 					GUILayout.EndVertical();

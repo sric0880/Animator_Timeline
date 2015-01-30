@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 
+[System.Serializable]
 public class AnimatorData : MonoBehaviour {
 	// show
 	public List<AMTake> takes = new List<AMTake>();
@@ -26,14 +27,12 @@ public class AnimatorData : MonoBehaviour {
 	[HideInInspector] public float zoom = 0.4f;
 	[HideInInspector] public int currentTake;
 	[HideInInspector] public int codeLanguage = 0; 	// 0 = C#, 1 = Javascript
-	[HideInInspector] public float width_track = 150f;
 	// temporary variables for selecting a property
 	//[HideInInspector] public bool didSelectProperty = false;
 	//[HideInInspector] public AMPropertyTrack propertySelectTrack;
 	//[HideInInspector] public Component propertyComponent;
 	//[HideInInspector] public PropertyInfo propertyInfo;
 	//[HideInInspector] public FieldInfo fieldInfo;
-	[HideInInspector] public bool autoKey = false;
 	[HideInInspector] public float elapsedTime = 0f;
 	// private
 	private AMTake nowPlayingTake = null;

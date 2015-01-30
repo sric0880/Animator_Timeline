@@ -7,6 +7,13 @@ public class CustomInspector : EditorWindow
 
 	public AMTrack sTrack = null;
 	public int selectedFrame = 0;
+
+	private string[] wrapModeNames = {
+		"Once",	
+		"Loop",
+		"ClampForever",
+		"PingPong"
+	};
 	
 	private Texture[] texInterpl = {(Texture)Resources.Load("am_interpl_curve"),(Texture)Resources.Load("am_interpl_linear")};
 
