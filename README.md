@@ -1,6 +1,6 @@
 Animator_Timeline
 =================
 
-* GUISkin files will not work correctly when downloaded from Github. Extract them from the unity package.
+![Animator Timeline](8F470683-0F3B-44AA-A1CF-B835384F5C49.png)
 
 Discuss here: http://forum.unity3d.com/threads/135982-Animator-The-Ultimate-Timeline-Cutscene-Editor-for-Unity
