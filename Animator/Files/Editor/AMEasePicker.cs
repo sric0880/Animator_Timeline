@@ -20,10 +20,6 @@ public class AMEasePicker : EditorWindow {
 	// texture
 	Texture tex_orb = (Texture)Resources.Load("am_orb");
 	
-	// skins
-	private GUISkin skin = null;
-	private string cachedSkinName = null;
-	
 	// search categories
 	private List<List<string>> easeTypesFiltered = new List<List<string>>();
 	private string[] categories = new string[]{"All","Quad","Cubic","Quart","Quint","Sine","Expo","Circ","Bounce","Back","Elastic","Other"};
@@ -131,9 +127,7 @@ public class AMEasePicker : EditorWindow {
 
 	
 	void OnGUI() {
-		
 		this.title = "Ease";
-//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		bool updateEasingCurve = false;
 		
 		GUIStyle styleBox = new GUIStyle(GUI.skin.button);
@@ -142,7 +136,7 @@ public class AMEasePicker : EditorWindow {
 		styleBox.border = GUI.skin.button.border;
 		GUILayout.BeginArea(new Rect(5f,5f,position.width-10f,position.height-10f));
 			GUILayout.BeginHorizontal();
-				if(GUILayout.Button("", styleBox, GUILayout.Width(500f), GUILayout.Height(100f))) {
+				if(GUILayout.Button("", styleBox, GUILayout.Width(495f), GUILayout.Height(100f))) {
 					selectedSpeedIndex = (selectedSpeedIndex+1) % speedValues.Length;
 					percent = waitPercent*-1f;	
 				}
@@ -179,7 +173,6 @@ public class AMEasePicker : EditorWindow {
 					} else isCustomEase = false;
 				}
 			GUILayout.EndVertical();
-			GUILayout.Space(5f);
 			GUILayout.BeginHorizontal();
 				if(GUILayout.Button("Apply")) {
 					bool shouldUpdateCache = false;
@@ -213,12 +206,7 @@ public class AMEasePicker : EditorWindow {
 		styleLabelRight.alignment = TextAnchor.MiddleRight;
 		styleLabelRight.normal.textColor = Color.white;
 		EditorGUI.DropShadowLabel(new Rect(475f,5f,25f,25f),speedNames[selectedSpeedIndex],styleLabelRight);
-		// draw border
-		GUI.color = GUI.skin.window.normal.textColor;
-		GUI.DrawTexture(new Rect(0f,0f,7f,110f),EditorGUIUtility.whiteTexture);
-		GUI.DrawTexture(new Rect(position.width-209f,0f,208f,110f),EditorGUIUtility.whiteTexture);
-		GUI.color = Color.white;
-		
+
 		// curve field
 		if(updateEasingCurve) setEasingCurve();
 		else if(!isCustomEase && didChangeCurve()) {
@@ -229,7 +217,7 @@ public class AMEasePicker : EditorWindow {
 				selectedIndex = getCategoryIndexForEaseName("Custom");
 			}
 		}
-		curve = EditorGUI.CurveField(new Rect(500f, 5f, 208f, 100f),curve,Color.blue,new Rect(0f,-0.5f,1f,2.0f));
+		curve = EditorGUI.CurveField(new Rect(505f, 5f, 200f, 100f),curve,Color.blue,new Rect(0f,-0.5f,1f,2.0f));
 	}
 	
 	private void setupFilteredCategories() {

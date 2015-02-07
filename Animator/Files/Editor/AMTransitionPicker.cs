@@ -15,20 +15,17 @@ public class AMTransitionPicker : EditorWindow {
 	public static List<float> parameters = new List<float>();
 	public static Texture2D irisShape;
 	private static bool useGameView = false;
-	private static bool showTransitionList = true;
 	public static List<string> transitionNames = new List<string>();
-	// skins
-	private GUISkin skin = null;
-	private string cachedSkinName = null;
 	// resources
+	private Texture tex_icon_play = (Texture)Resources.Load("tex_nav_play");
+	private Texture tex_icon_stop = (Texture)Resources.Load("tex_nav_stop");
+	private Texture tex_icon_first_key = (Texture)Resources.Load("tex_nav_skip_back");
+	private Texture tex_icon_last_key = (Texture)Resources.Load("tex_nav_skip_forward");
+
 	private Texture tex_transition_a = (Texture)Resources.Load ("am_transition_a");
 	private Texture tex_transition_b = (Texture)Resources.Load ("am_transition_b");
 	private Texture tex_default_view = (Texture) Resources.Load("am_icon_default_view");
 	private Texture tex_game_view = (Texture) Resources.Load("am_icon_game_view");
-	private Texture tex_transition_toggle_bg = (Texture) Resources.Load("am_transition_toggle_bg");
-	private Texture tex_transition_toggle_button_bg = (Texture) Resources.Load("am_transition_toggle_button_bg");
-	private Texture texRightArrow = (Texture)Resources.Load("am_nav_right");// inspector right arrow
-	private Texture texLeftArrow = (Texture)Resources.Load("am_nav_left");	// inspector left arrow
 	private Texture tex_angle_0 = (Texture)Resources.Load ("am_angle_0");
 	private Texture tex_angle_90 = (Texture)Resources.Load ("am_angle_90");
 	private Texture tex_angle_180 = (Texture)Resources.Load ("am_angle_180");
@@ -36,8 +33,7 @@ public class AMTransitionPicker : EditorWindow {
 	// constants
 	private const float width_preview_max = 275f;
 	private const float height_preview_max = 180f;
-	private const float width_transition_list_open = 476f;
-	private const float width_transition_list_closed = 323f;
+	private const float width_transition_list_open = 465f;
 	private const float height_window = 509f;
 	private const float height_parameter_space = 4f;
 	private const float height_toggle_button = 44f;
@@ -107,8 +103,6 @@ public class AMTransitionPicker : EditorWindow {
 	void OnGUI() {
 		setWindowSize();
 		this.title = "Fade";
-		// load skin
-//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		EditorGUIUtility.LookLikeControls();
 		#region drag logic
 		Event e = Event.current;
@@ -131,11 +125,13 @@ public class AMTransitionPicker : EditorWindow {
 		GUIStyle stylePadding = new GUIStyle();
 		stylePadding.padding = new RectOffset(4,4,4,4);
 		#endregion
+
 		#region main horizontal
 		GUILayout.BeginHorizontal();
 			#region transition details
-			GUILayout.BeginVertical();
-				Rect rectArea = new Rect(27f-3f,0f,295f-10f*2f+2f,position.height);
+			GUILayout.BeginVertical(GUILayout.Width(310f));
+			GUILayout.Label("");
+				Rect rectArea = new Rect(24f, 0f, 277f, position.height);
 				GUILayout.BeginArea(rectArea);
 					#region transition title
 					GUIStyle labelLarge = new GUIStyle(GUI.skin.label);
@@ -206,45 +202,31 @@ public class AMTransitionPicker : EditorWindow {
 					}
 					#endregion
 
-		//TODO undo
-//					#region playback controls
-//					// time bar
-//					Rect rectTimeBar = new Rect(0f, y_preview_texture + height_preview_max+2f+4f, rectArea.width-(18f*3f+2f*4f),10f);
-//					GUI.color = GUI.skin.window.hover.textColor;
-//					GUI.DrawTexture(rectTimeBar, EditorGUIUtility.whiteTexture);
-//					Rect rectCurrentTime = new Rect(rectTimeBar);
-//					rectCurrentTime.width = Mathf.Clamp(rectCurrentTime.width*percent, 0f, rectTimeBar.width);
-//					GUI.DrawTexture(rectCurrentTime, EditorGUIUtility.whiteTexture);
-//					GUI.color = Color.white;
-//					if(GUI.Button(rectTimeBar, "", "label") || dragType == (int)DragType.Seek) {
-//						percent = (e.mousePosition.x-rectTimeBar.x)/rectTimeBar.width;
-//						updateValue();
-//					}
-//					if(rectTimeBar.Contains(e.mousePosition)) {
-//						mouseOverElement = (int)ElementType.TimeBar;
-//					}
-//					// last frame button
-//					Rect rectPlaybackButton = new Rect(rectArea.width-18f-2f,y_preview_texture+height_preview_max+2f,18f,18f);
-//
-//					if(GUI.Button(rectPlaybackButton,AMTimeline.getSkinTextureStyleState("nav_skip_forward").background,GUI.skin.GetStyle("ButtonImage"))) {
-//						percent = 1f;
-//						updateValue();
-//					}
-//					rectPlaybackButton.x -= (18f+2f);
-//					// play / pause button
-//					Texture playToggleTexture;
-//					if(isPlaying) playToggleTexture = AMTimeline.getSkinTextureStyleState("nav_stop_white").background;
-//					else playToggleTexture = AMTimeline.getSkinTextureStyleState("nav_play").background;
-//					if(GUI.Button(rectPlaybackButton,playToggleTexture,GUI.skin.GetStyle("ButtonImage"))) {
-//						isPlaying = !isPlaying;
-//					}
-//					rectPlaybackButton.x -= (18f+2f);
-//					// first frame button
-//					if(GUI.Button(rectPlaybackButton,AMTimeline.getSkinTextureStyleState("nav_skip_back").background,GUI.skin.GetStyle("ButtonImage"))) {
-//						percent = 0f;
-//						updateValue();
-//					}
-//					#endregion
+					#region playback controls
+					// time bar
+					Rect rectTimeBar = new Rect(5f, y_preview_texture + height_preview_max+2f, rectArea.width-76f,15f);
+					float oldPercent = percent;
+					percent = GUI.HorizontalSlider(rectTimeBar, percent, 0, 1);
+					if(oldPercent!=percent) updateValue();
+					// last frame button
+					Rect rectPlaybackButton = new Rect(rectArea.width-18f-2f,y_preview_texture+height_preview_max+2f,18f,18f);
+
+					if(GUI.Button(rectPlaybackButton, new GUIContent("",tex_icon_last_key , "Skip Forward"))) {
+						percent = 1f;
+						updateValue();
+					}
+					rectPlaybackButton.x -= (18f+2f);
+					// play / pause button
+					if(GUI.Button(rectPlaybackButton,new GUIContent("",isPlaying? tex_icon_stop:tex_icon_play, isPlaying?"Pause":"Play"))) {
+						isPlaying = !isPlaying;
+					}
+					rectPlaybackButton.x -= (18f+2f);
+					// first frame button
+					if(GUI.Button(rectPlaybackButton,new GUIContent("",tex_icon_first_key , "Skip Barkward"))) {
+						percent = 0f;
+						updateValue();
+					}
+					#endregion
 					#region preview hover controls
 					if(dragType == (int)DragType.None && rectPreviewTextureFull.Contains(e.mousePosition)) {
 						Vector2 v = new Vector2(-1f,-1f);
@@ -258,8 +240,7 @@ public class AMTransitionPicker : EditorWindow {
 						}
 						// view type selection grid
 						if(!rectViewSelGrid.Contains(e.mousePosition)) GUI.color = new Color(1f,1f,1f,.5f);
-						if(GUI.Button(rectViewSelGrid,(useGameView ? new GUIContent(tex_default_view,"Standard View") : new GUIContent(tex_game_view,"Game View")),GUI.skin.GetStyle("ButtonImage"))) useGameView = !useGameView;
-						//useGameView = GUI.SelectionGrid(rectViewSelGrid,(useGameView ? 1 : 0),new GUIContent[]{new GUIContent(tex_default_view,"Standard View"),new GUIContent(tex_game_view,"Game View")},2,GUI.skin.GetStyle("ButtonImage")) == 1 ? true : false;
+						if(GUI.Button(rectViewSelGrid,(useGameView ? new GUIContent(tex_default_view,"Standard View") : new GUIContent(tex_game_view,"Game View")))) useGameView = !useGameView;
 						GUI.color = Color.white;
 						// speed label
 						GUIStyle styleLabelRight = new GUIStyle(GUI.skin.label);
@@ -286,7 +267,7 @@ public class AMTransitionPicker : EditorWindow {
 						GUILayout.BeginVertical(GUILayout.Width(width_preview_max));
 							// ease picker, hide if selected transition is "None"
 							if(selectedTransition != (int) AMTween.Fade.None) {
-								if(AMTimeline.showEasePicker(track,key,aData)) {
+							if(CustomInspector.showEasePicker(track,key)) {
 									if(isPlaying) percent = waitPercent*-1f;
 								}
 							}
@@ -302,72 +283,32 @@ public class AMTransitionPicker : EditorWindow {
 				GUILayout.EndArea();
 			GUILayout.EndVertical();
 			#endregion
-			#region transition list
-			// show/hide list texture
-			Rect rectShowHideButton = new Rect(width_transition_list_closed-36f,0f,56f,height_toggle_button);
-			bool shouldMakeTransparent = (!showTransitionList && !rectShowHideButton.Contains(e.mousePosition));
-			//GUI.color = new Color(31f/255f,37f/255f,45f/255f,(shouldMakeTransparent ? .5f : 1f));
-			GUI.color = new Color(GUI.color.r,GUI.color.g,GUI.color.b, (shouldMakeTransparent ? .5f : 1f));
-			Rect rectToggleBGFade = new Rect(width_transition_list_closed-24f,0f,27f,position.height);
-			GUI.DrawTexture(rectToggleBGFade,tex_transition_toggle_bg);
-			GUI.DrawTexture(new Rect(rectToggleBGFade.x+rectToggleBGFade.width,0f,width_transition_list_open-width_transition_list_closed+24f-rectToggleBGFade.width,position.height),EditorGUIUtility.whiteTexture);
-			Rect rectToggleBG = new Rect(width_transition_list_closed-71f+35f,0f,56f,height_toggle_button);
-			GUI.DrawTexture(rectToggleBG,tex_transition_toggle_button_bg);
-			GUI.color = new Color(1f,1f,1f,(shouldMakeTransparent ? .5f : 1f));
-			GUI.DrawTexture(new Rect(rectToggleBG.x + 8f + (showTransitionList ? 1f : 0f), rectToggleBG.y + rectToggleBG.height/2f - 19f/2f, 22f, 19f), showTransitionList ? texLeftArrow : texRightArrow);
-			GUI.color = Color.white;
-			// show/hide list button
-			if(GUI.Button(rectShowHideButton,"","label")) showTransitionList = !showTransitionList;
-			if(showTransitionList) {
-				GUILayout.BeginVertical(stylePadding,GUILayout.Width(153f));
-					#region search transition list
-					GUILayout.BeginVertical(GUILayout.Height(33f));
-						GUILayout.Space(5f);
-						GUILayout.FlexibleSpace();
-						GUILayout.BeginHorizontal();
-							GUILayout.BeginVertical(GUILayout.Width(50f));
-								GUILayout.Space(2f);
-								GUILayout.Label("Search");
-							GUILayout.EndVertical();
-							GUILayout.BeginVertical();
-								GUILayout.Space(3f);
-								searchString = GUILayout.TextField(searchString, GUILayout.Width(70f));
-							GUILayout.EndVertical();
-							Rect rectClearButton = new Rect(position.width-24f,GUILayoutUtility.GetLastRect().y+4f,15f,15f);
-			//TODO undo
-//							if(GUI.Button(rectClearButton,AMTimeline.getSkinTextureStyleState("x").background,GUI.skin.GetStyle("ButtonImage"))) {
-//								searchString = "";
-//							}
-						GUILayout.EndHorizontal();
-						GUILayout.FlexibleSpace();
-					GUILayout.EndVertical();
-					#endregion
-					GUILayout.Space(8f);
-					#region transition list
-					// set scrollview background
-					GUIStyle styleScrollView = new GUIStyle(GUI.skin.scrollView);
-					styleScrollView.normal.background = GUI.skin.GetStyle("GroupElementBG").onNormal.background;
-					scrollViewTransitions = GUILayout.BeginScrollView(scrollViewTransitions, false, true, GUI.skin.horizontalScrollbar, GUI.skin.verticalScrollbar, styleScrollView/*, GUILayout.Width(175f)*/);
-						GUILayout.Space(2f);
-						if(setSelectedTransition(filteredTransitionNames, GUILayout.SelectionGrid(getSelectedTransitionIndex(filteredTransitionNames), filteredTransitionNames.ToArray(), 1, GUILayout.Width(120f)))) {
-							// select transition
-							setDefaultParametersFor(selectedTransition, ref parameters, ref irisShape, ref justSetFocalPoint);
-							percent = waitPercent*-1f;
-							if(!isPlaying) isPlaying = true;
-							updateValue();
-						}
-						if(filteredTransitionNames.Count <= 0) {
-							GUILayout.BeginHorizontal();
-								GUILayout.FlexibleSpace();
-								GUILayout.Label("No results found");
-								GUILayout.FlexibleSpace();
-							GUILayout.EndHorizontal();
-						}
-					GUILayout.EndScrollView();
-					#endregion
-				GUILayout.EndVertical();
-			}
-			#endregion
+		#region transition list
+		// set scrollview background
+		scrollViewTransitions = GUILayout.BeginScrollView(scrollViewTransitions, false, true, GUILayout.Width(150f));
+		#region search transition list
+		GUILayout.Space(10f);
+		GUILayout.BeginHorizontal();
+		EditorGUIUtility.labelWidth = 50f;
+		searchString = EditorGUILayout.TextField("Search",searchString);
+		GUILayout.EndHorizontal();
+		#endregion
+		if(setSelectedTransition(filteredTransitionNames, GUILayout.SelectionGrid(getSelectedTransitionIndex(filteredTransitionNames), filteredTransitionNames.ToArray(), 1, GUILayout.Width(120f)))) {
+			// select transition
+			setDefaultParametersFor(selectedTransition, ref parameters, ref irisShape, ref justSetFocalPoint);
+			percent = waitPercent*-1f;
+			if(!isPlaying) isPlaying = true;
+			updateValue();
+		}
+		if(filteredTransitionNames.Count <= 0) {
+			GUILayout.BeginHorizontal();
+			GUILayout.FlexibleSpace();
+			GUILayout.Label("No results found");
+			GUILayout.FlexibleSpace();
+			GUILayout.EndHorizontal();
+		}
+		GUILayout.EndScrollView();
+		#endregion
 		GUILayout.EndHorizontal();
 		#endregion
 		#region apply / cancel
@@ -513,8 +454,7 @@ public class AMTransitionPicker : EditorWindow {
 				EditorGUIUtility.LookLikeControls();
 				GUILayout.BeginHorizontal();
 					irisShape = (Texture2D) EditorGUILayout.ObjectField("",irisShape,typeof(Texture2D),false);
-					GUI.skin = skin;
-					EditorGUIUtility.LookLikeControls(100f);
+					EditorGUIUtility.labelWidth = 100f;
 					GUILayout.BeginVertical(GUILayout.Height(68f));
 						GUILayout.FlexibleSpace();
 						// max scale
@@ -580,8 +520,7 @@ public class AMTransitionPicker : EditorWindow {
 				EditorGUIUtility.LookLikeControls();
 				GUILayout.BeginHorizontal();
 					irisShape = (Texture2D) EditorGUILayout.ObjectField("",irisShape,typeof(Texture2D),false);
-					GUI.skin = skin;
-					EditorGUIUtility.LookLikeControls(100f);
+					EditorGUIUtility.labelWidth = 100f;
 					GUILayout.BeginVertical(GUILayout.Height(68f));
 						GUILayout.FlexibleSpace();
 						// scale
@@ -635,7 +574,7 @@ public class AMTransitionPicker : EditorWindow {
 				}
 				GUILayout.BeginHorizontal();
 					GUILayout.Label("Start Angle");
-					indexStartAngle = GUILayout.SelectionGrid(indexStartAngle,new GUIContent[]{new GUIContent(tex_angle_0,"0"),new GUIContent(tex_angle_90,"90"),new GUIContent(tex_angle_180,"180"),new GUIContent(tex_angle_270,"270")},4,GUI.skin.GetStyle("ButtonImage"));
+					indexStartAngle = GUILayout.SelectionGrid(indexStartAngle,new GUIContent[]{new GUIContent(tex_angle_0,"0"),new GUIContent(tex_angle_90,"90"),new GUIContent(tex_angle_180,"180"),new GUIContent(tex_angle_270,"270")},4);
 				GUILayout.EndHorizontal();
 				
 				float newAngle = radialWipeIndexToAngle(indexStartAngle);
@@ -668,7 +607,7 @@ public class AMTransitionPicker : EditorWindow {
 				}
 				GUILayout.BeginHorizontal();
 					GUILayout.Label("Start Angle");
-					_indexStartAngle = GUILayout.SelectionGrid(_indexStartAngle,new GUIContent[]{new GUIContent(tex_angle_0,"0"),new GUIContent(tex_angle_90,"90"),new GUIContent(tex_angle_180,"180"),new GUIContent(tex_angle_270,"270")},4,GUI.skin.GetStyle("ButtonImage"));
+					_indexStartAngle = GUILayout.SelectionGrid(_indexStartAngle,new GUIContent[]{new GUIContent(tex_angle_0,"0"),new GUIContent(tex_angle_90,"90"),new GUIContent(tex_angle_180,"180"),new GUIContent(tex_angle_270,"270")},4);
 				GUILayout.EndHorizontal();
 				
 				float _newAngle = radialWipeIndexToAngle(_indexStartAngle);
@@ -885,7 +824,7 @@ public class AMTransitionPicker : EditorWindow {
 	}
 	
 	public void setWindowSize() {
-		this.maxSize = new Vector2((showTransitionList ? width_transition_list_open : width_transition_list_closed), height_window);
+		this.maxSize = new Vector2(width_transition_list_open, height_window);
 		this.minSize = this.maxSize;	
 	}
 	
@@ -958,7 +897,6 @@ public class AMTransitionPicker : EditorWindow {
 		} else {
 			ease =  AMTween.GetEasingFunction((AMTween.EaseType)key.easeType);
 		}
-		
 		_value = ease(1f,0f,Mathf.Clamp(percent,0f,1f),curve);		
 	}
 	

@@ -72,8 +72,11 @@ public class AMSettings : EditorWindow {
 //	}
 	void loadAnimatorData()
 	{
-		aData = AMTimeline.window.aData;
-		numFrames = aData.getCurrentTake().numFrames;
-		frameRate = aData.getCurrentTake().frameRate;
+		GameObject go = GameObject.Find ("AnimatorData");
+		if(go) {
+			aData = (AnimatorData) go.GetComponent ("AnimatorData");
+			numFrames = aData.getCurrentTake().numFrames;
+			frameRate = aData.getCurrentTake().frameRate;
+		}
 	}
 }

@@ -11,7 +11,6 @@ public class AMTake :ScriptableObject {
 	
 	#region Declarations
 	
-	public new string name;					// take name
 	public int frameRate = 24;				// frames per second
 	public int numFrames = 1440;			// number of frames
 	public float startFrame = 1f;				// first frame to render
@@ -267,23 +266,6 @@ public class AMTake :ScriptableObject {
 		selectedGroup = group_id;
 	}
 		
-	/*public void contextSelectGroup(int group_id, bool deselect) {
-		AMGroup grp = getGroup(group_id);
-		for(int i=0;i<grp.elements.Count;i++) {
-			// select track
-			if(grp.elements[i] > 0) {
-				bool isSelected = contextSelectionTracks.Contains(grp.elements[i]);
-				if(deselect) {
-					if(isSelected) contextSelectionTracks.Remove(grp.elements[i]);
-				} else {
-					if(!isSelected) contextSelectionTracks.Add(grp.elements[i]);
-				}
-			} else {
-				contextSelectGroup(grp.elements[i],deselect);	
-			}
-		}
-	}*/
-	
 	public void contextSelectGroup(int group_id, bool isControlDown) {
 		AMGroup grp = getGroup(group_id);
 		int numTracks = 0;
@@ -545,10 +527,6 @@ public class AMTake :ScriptableObject {
 		
 		// select new group when it has been created
 		selectedGroup = g.group_id;
-	}
-	
-	public AMTake(string name) {
-		this.name = name;	
 	}
 	
 	// get the new index for a new track

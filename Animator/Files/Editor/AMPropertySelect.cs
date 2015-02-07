@@ -18,10 +18,7 @@ public class AMPropertySelect : EditorWindow {
 	//private Vector2 scrollViewComponent;
 	private string[] ignoreProperties = {"rolloffFactor","minVolume","maxVolume"};
 	const BindingFlags flags = BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance;
-	// skins
-	private GUISkin skin = null;
-	private string cachedSkinName = null;
-	
+
 	void OnEnable() {
 		window = this;
 		this.title = "Property";
@@ -58,8 +55,6 @@ public class AMPropertySelect : EditorWindow {
 		if(EditorWindow.mouseOverWindow==this) this.Repaint();
 	}
 	void OnGUI() {
-		
-//		AMTimeline.loadSkin(oData, ref skin, ref cachedSkinName, position);
 		if(!aData) {
 			AMTimeline.MessageBox("Animator requires an AnimatorData component in your scene. Launch Animator to add the component.",AMTimeline.MessageBoxType.Warning);
 			return;

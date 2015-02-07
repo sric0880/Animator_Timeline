@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEditor;
-using System.Reflection;
 using System.Collections;
 using System.Collections.Generic;
 using System;
@@ -14,8 +13,8 @@ public class AMTimeline : EditorWindow {
 	#region Declarations	
 	
 	public static AMTimeline window = null;
+	private CustomInspector customInspector = null;
 	
-	const BindingFlags methodFlags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly;
 	private AnimatorData _aData;
 	public AnimatorData aData {
 		get {
@@ -23,7 +22,7 @@ public class AMTimeline : EditorWindow {
 		}
 		set {
 			_aData = value;
-			indexMethodInfo = -1;	// re-check for methodinfo
+			EventLayout.resetIndexMethodInfo();
 		}
 	}// AnimatorData component, holds all data
 	private Vector2 scrollViewValue;			// current value in scrollview (vertical)
@@ -171,9 +170,6 @@ public class AMTimeline : EditorWindow {
 	private Texture tex_icon_stop = (Texture)Resources.Load("tex_nav_stop");
 	private Texture tex_icon_first_key = (Texture)Resources.Load("tex_nav_skip_back");
 	private Texture tex_icon_last_key = (Texture)Resources.Load("tex_nav_skip_forward");
-	private Texture tex_icon_popup = (Texture)Resources.Load("tex_popup");
-	private Texture tex_icon_foldout = (Texture) Resources.Load("foldout_normal");
-	private Texture tex_icon_foldin = (Texture) Resources.Load("foldout_active");
 
 	private Texture tex_element_position = (Texture)Resources.Load ("am_element_position");
 	private Texture texFrKey = (Texture)Resources.Load("am_key");
@@ -212,26 +208,8 @@ public class AMTimeline : EditorWindow {
 	// temporary variables
 	private bool time_numbering = false;
 	private bool isPlayMode = false; 		// whether the user is in play mode, used to close AMTimeline when in play mode
-	private bool isRenamingTake = false;	// true if the user is renaming the current take
 	private int isRenamingTrack = -1;		// the track the is user renaming, -1 if not renaming a track
-	private static List<MethodInfo> cachedMethodInfo = new List<MethodInfo>();
-	private List<string> cachedMethodNames = new List<string>();
-	private List<Component> cachedMethodInfoComponents = new List<Component>();
-	private int updateRateMethodInfoCache = 2;		// update method info cache every x update frames if necessary
-	private int updateMethodInfoCacheBuffer = 0;	// temporary value
-	private static int cachedIndexMethodInfo = -1;
-	private static int indexMethodInfo {
-		get { return cachedIndexMethodInfo; }
-		set {
-			if(cachedIndexMethodInfo != value) {
-				cachedIndexMethodInfo = value;
-				cacheSelectedMethodParameterInfos();
-			}
-			cachedIndexMethodInfo = value;
-		}
-	}
-	private static Dictionary<string,bool> arrayFieldFoldout = new Dictionary<string, bool>();	// used to store the foldout values for arrays in event methods
-	private FieldInfo undoCallback;
+
 	private GenericMenu menu = new GenericMenu(); 			// add track menu
 	private GenericMenu menu_drag = new GenericMenu(); 		// add track menu, on drag to window
 	private GenericMenu contextMenu = new GenericMenu();	// context selection menu
@@ -305,7 +283,6 @@ public class AMTimeline : EditorWindow {
 	void OnEnable() {
 		this.title = "Animator";
 		this.minSize = new Vector2(810f,190f);
-//		this.minSize = new Vector2(width_track+width_playback_controls+width_inspector_open+70f,190f);
 		window = this;
 		GameObject go = GameObject.Find ("AnimatorData");
 		if(go) {
@@ -362,7 +339,7 @@ public class AMTimeline : EditorWindow {
 			//this.Repaint();
 			//repaintBuffer = repaintRefreshRate;
 			// reset inspector selected methodinfo
-			indexMethodInfo = -1;
+			EventLayout.resetIndexMethodInfo();
 			// preview selected frame
 			if(aData) aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
 			// check for pro license
@@ -388,6 +365,7 @@ public class AMTimeline : EditorWindow {
 		if(AMCameraFade.hasInstance() && AMCameraFade.isPreview()) {
 			AMCameraFade.destroyImmediateInstance();
 		}
+		if (customInspector != null) customInspector.Close();
 	}
 	void Update() {
 		isPlayMode = EditorApplication.isPlayingOrWillChangePlaymode;
@@ -437,7 +415,7 @@ public class AMTimeline : EditorWindow {
 			// process property if it has been selected
 			//processSelectProperty();
 			// update methodinfo cache if necessary, used for event track inspector
-			processUpdateMethodInfoCache();
+//			processUpdateMethodInfoCache();
 		}
 	}
 	void OnGUI() {
@@ -478,7 +456,8 @@ public class AMTimeline : EditorWindow {
 					// add take
 					aData.addTake();
 					// save data
-					setDirtyTakes(aData.takes);
+					EditorUtility.SetDirty(aData);
+					EditorUtility.SetDirty(aData.getCurrentTake());
 				}
 				return;
 			}	
@@ -528,7 +507,7 @@ public class AMTimeline : EditorWindow {
 		#region set cursor
 		int customCursor = (int)CursorType.None;
 		bool showCursor = true;
-		 if(!isRenamingTake && isRenamingTrack <= -1 && dragType==(int)DragType.CursorHand) {
+		 if(isRenamingTrack <= -1 && dragType==(int)DragType.CursorHand) {
 			cursorHand = true;
 			showCursor = false;
 			customCursor = (int)CursorType.Hand;
@@ -568,7 +547,7 @@ public class AMTimeline : EditorWindow {
 		if(Screen.showCursor != showCursor) {
 			Screen.showCursor = showCursor;
 		}
-		if(isRenamingTake || isRenamingTrack != -1) EditorGUIUtility.AddCursorRect(rectWindow,MouseCursor.Text);
+		if(isRenamingTrack != -1) EditorGUIUtility.AddCursorRect(rectWindow,MouseCursor.Text);
 		else if(dragType == (int)DragType.TimeScrub || dragType == (int)DragType.FrameScrub || dragType == (int)DragType.MoveSelection) EditorGUIUtility.AddCursorRect(rectWindow,MouseCursor.SlideArrow);
 		else if(dragType == (int)DragType.ResizeTrack || dragType == (int)DragType.ResizeAction || dragType == (int)DragType.ResizeHScrollbarLeft || dragType == (int)DragType.ResizeHScrollbarRight) EditorGUIUtility.AddCursorRect(rectWindow,MouseCursor.ResizeHorizontal);
 		#endregion
@@ -661,7 +640,7 @@ public class AMTimeline : EditorWindow {
 
 		#region playback speed popup
 		Rect rectPopupPlaybackSpeed = new Rect(rectSkipForward.x+rectSkipForward.width+margin,rectSkipForward.y,34f,height_button);
-		aData.takes[aData.getCurrentTakeValue()].playbackSpeedIndex = EditorGUI.Popup(rectPopupPlaybackSpeed,aData.takes[aData.getCurrentTakeValue()].playbackSpeedIndex,playbackSpeed,EditorStyles.toolbarButton);
+		aData.getCurrentTake().playbackSpeedIndex = EditorGUI.Popup(rectPopupPlaybackSpeed,aData.getCurrentTake().playbackSpeedIndex,playbackSpeed,EditorStyles.toolbarButton);
 		#endregion
 
 		#region settings
@@ -674,14 +653,10 @@ public class AMTimeline : EditorWindow {
 		GUI.Label (rectLabelSettings,strSettings,styleLabelMenu);
 		Rect rectBtnModify = new Rect(rectLabelSettings.x+rectLabelSettings.width+margin,rectLabelSettings.y,60f,height_button);
 		if(GUI.Button(rectBtnModify,"Modify",EditorStyles.toolbarButton)) {
-			//EditorWindow windowSettings = ScriptableObject.CreateInstance<AMSettings>();
-			//windowSettings.ShowUtility();
-
-			//TODO
-			CustomInspector windowSettings = ScriptableObject.CreateInstance<CustomInspector>();
-			windowSettings.sTrack = aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack);
-			windowSettings.selectedFrame = aData.getCurrentTake().selectedFrame;
+			EditorWindow windowSettings = ScriptableObject.CreateInstance<AMSettings>();
 			windowSettings.ShowUtility();
+
+
 		}
 		if(rectBtnModify.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
 		#endregion
@@ -794,9 +769,11 @@ public class AMTimeline : EditorWindow {
 		#endregion
 
 		#region delete key
+		if(aData.getCurrentTake().selectedTrack <= -1 || !aData.getCurrentTake().getSelectedTrack().hasKeyOnFrame(selectedFrame) || isPlaying)
+			GUI.enabled = false;
 		Rect rectBtnDelKey = new Rect(rectBtnInsertKey.x+rectBtnInsertKey.width,rectBtnInsertKey.y,width_button,height_button);
 		if(GUI.Button (rectBtnDelKey,new GUIContent("", tex_icon_delete_keyframe, "Delete Keyframe"),EditorStyles.toolbarButton)) {
-			//TODO
+			deleteKeyFromSelectedFrame();
 		}
 		if(rectBtnDelKey.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) mouseOverElement = (int)ElementType.Button;
 		#endregion
@@ -1045,10 +1022,6 @@ public class AMTimeline : EditorWindow {
 			}
 			
 			if(objects_window.Count > 0) objects_window = new List<GameObject>();
-			if(isRenamingTake) {
-				aData.makeTakeNameUnique(aData.getCurrentTake());
-				isRenamingTake = false;
-			}
 			if(isRenamingTrack != -1) isRenamingTrack = -1;
 			if(isChangingTimeControl) isChangingTimeControl = false;
 			if(isChangingFrameControl) isChangingFrameControl = false;
@@ -1116,22 +1089,13 @@ public class AMTimeline : EditorWindow {
 		EditorGUILayout.HelpBox(message,messageType);
 	}	
 
-	public static void resetIndexMethodInfo() {
-		indexMethodInfo = -1;	
-	}
 	public static float frameToTime(int frame,float frameRate) {
 		return (float)Math.Round((float)frame/frameRate,2);	
 	}
 	public static int timeToFrame(float time,float frameRate) {
 		return Mathf.FloorToInt(time*frameRate);	
 	}
-	private static void cacheSelectedMethodParameterInfos() {
-		if(cachedMethodInfo == null || indexMethodInfo == -1 || (indexMethodInfo>=cachedMethodInfo.Count)) {
-			arrayFieldFoldout = new Dictionary<string, bool>();	// reset array foldout dictionary
-			return;
-		}
-	}
-	
+
 	#endregion
 	
 	#region Show/Draw
@@ -1183,9 +1147,8 @@ public class AMTimeline : EditorWindow {
 			_track.name = GUI.TextField(new Rect(rectTrack.x+12f,rectTrack.y,rectTrack.width-14f, 16f),_track.name,20);
 			GUI.FocusControl("RenameTrack"+track_index);
 		}
-
 		//track clicked
-		if(GUI.Button(new Rect(rectTrack.x+12f, rectTrack.y, rectTrack.width-12f, _track.foldout ? 39f : height_track_foldin),"","label")) {
+		if(GUI.Button(new Rect(rectTrack.x+12f, rectTrack.y, rectTrack.width-((_track is AMPropertyTrack)?60f:12f), _track.foldout ? 39f : height_track_foldin),"","label")) {
 			timelineSelectTrack(track_index);
 		}
 		// set track icon texture
@@ -1211,13 +1174,14 @@ public class AMTimeline : EditorWindow {
 			// if property track, show set property button
 			if(_track is AMPropertyTrack) {
 				if(!(_track as AMPropertyTrack).obj) GUI.enabled = false;
-					GUIStyle styleButtonSet = new GUIStyle(GUI.skin.button);
-					styleButtonSet.clipping	= TextClipping.Overflow;
-					if(GUI.Button(new Rect(width_track-54f,height_track-38f,44f,15f),"Set",styleButtonSet)) {
-						// show property select window 
-						AMPropertySelect.setValues((_track as AMPropertyTrack));
-						EditorWindow.GetWindow (typeof (AMPropertySelect));
-					}
+				GUIStyle styleButtonSet = new GUIStyle(GUI.skin.button);
+				styleButtonSet.clipping	= TextClipping.Overflow;
+				if(GUI.Button(new Rect(width_track-54f,height_track-38f,44f,15f),"Set",styleButtonSet)) {
+					// show property select window 
+					AMPropertySelect.setValues((_track as AMPropertyTrack));
+					EditorWindow.GetWindow (typeof (AMPropertySelect));
+					timelineSelectTrack(track_index);
+				}
 				GUI.enabled = !isPlaying;
 			}
 			// track object
@@ -1358,7 +1322,7 @@ public class AMTimeline : EditorWindow {
 				if(birdseyeKeyFrames.Count > 0) {
 				for(int i=birdseyeKeyFrames.Count-1;i>=0;i--) {
 					selected = ((isTrackSelected) && aData.getCurrentTake().isFrameSelected(birdseyeKeyFrames[i]));	
-					if(dragType!=(int)DragType.MoveSelection && dragType!=(int)DragType.ContextSelection && !isRenamingTake && isRenamingTrack == -1 && mouseOverFrame == 0 && birdseyeKeyRects[i].Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
+					if(dragType!=(int)DragType.MoveSelection && dragType!=(int)DragType.ContextSelection && isRenamingTrack == -1 && mouseOverFrame == 0 && birdseyeKeyRects[i].Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
 						mouseOverFrame = birdseyeKeyFrames[i];
 						mouseOverTrack = t;
 						mouseOverSelectedFrame = (selected);
@@ -1423,7 +1387,7 @@ public class AMTimeline : EditorWindow {
 				}
 			}
 		}
-		if(!isRenamingTake && isRenamingTrack == -1 && mouseOverFrame == 0 && e.mousePosition.x >= rectFramesBirdsEye.x && e.mousePosition.x <= (rectFramesBirdsEye.x+rectFramesBirdsEye.width)) {
+		if(isRenamingTrack == -1 && mouseOverFrame == 0 && e.mousePosition.x >= rectFramesBirdsEye.x && e.mousePosition.x <= (rectFramesBirdsEye.x+rectFramesBirdsEye.width)) {
 				if(rectFramesBirdsEye.Contains(e.mousePosition) && mouseOverElement == (int)ElementType.None) {
 					mouseOverFrame = mouseXOverFrame;
 					mouseOverTrack = t;
@@ -1689,219 +1653,10 @@ public class AMTimeline : EditorWindow {
 		// if there are no tracks, return
 		if(aData.getCurrentTake().getTrackCount() <= 0) return;
 	}
-	
-	bool showFieldFor(Rect rect, string id, string name, AMEventParameter parameter, Type t, int level, ref float height_field) {
-		rect.x = 5f*level;
-		name = typeStringBrief(t)+" "+name;
-		bool saveChanges = false;
-		if(t.IsArray) {
-			if(t.GetElementType().IsArray) {
-				GUI.skin.label.wordWrap = true;
-				rect.height = 40f;
-				height_field += rect.height;
-				GUI.Label(rect, "Multi-dimensional arrays are currently unsupported.");
-				return false;
-			}
-			if(!arrayFieldFoldout.ContainsKey(id)) arrayFieldFoldout.Add(id,true);
-			Rect rectArrayFoldout = new Rect(rect.x,rect.y+3f,15f,15f);
-			if(GUI.Button(rectArrayFoldout,"","label")) arrayFieldFoldout[id] = !arrayFieldFoldout[id];
-			GUI.DrawTexture(rectArrayFoldout,(arrayFieldFoldout[id] ? tex_icon_foldout : tex_icon_foldin));
-			Rect rectLabelArrayName = new Rect(rectArrayFoldout.x+rectArrayFoldout.width+margin,rect.y,rect.width-rectArrayFoldout.width-margin,rect.height);
-			GUI.Label(rectLabelArrayName,name);
-			height_field += rectLabelArrayName.height;
-			if(arrayFieldFoldout[id]) {
-				// show elements if folded out
-				if(parameter.lsArray.Count <= 0) {
-					AMEventParameter a = CreateInstance<AMEventParameter>();
-					a.setValueType(t.GetElementType());
-					parameter.lsArray.Add(a);
-					saveChanges = true;
-				}
-				Rect rectElement = new Rect(rect);
-				rectElement.y += rect.height+margin;
-				for(int i=0; i<parameter.lsArray.Count;i++) {
-					float prev_height = height_field;
-					if((showFieldFor(rectElement, id+"_"+i,"("+i.ToString()+")",parameter.lsArray[i],t.GetElementType(),(level+1), ref height_field))&&!saveChanges) saveChanges = true;
-					rectElement.y += height_field-prev_height;
-				}
-				// add to array button
-				Rect rectLabelElement = new Rect(rect.x,rectElement.y,rect.width-40f-margin*2f,25f);
-				height_field += rectLabelElement.height;
-				GUIStyle styleLabelRight = new GUIStyle(GUI.skin.label);
-				styleLabelRight.alignment = TextAnchor.MiddleRight;
-				GUI.Label(rectLabelElement,typeStringBrief(t.GetElementType()),styleLabelRight);
-				if(parameter.lsArray.Count<=1) GUI.enabled = false;
-				Rect rectButtonRemoveElement = new Rect(rect.x+rect.width-40f,rectLabelElement.y,20f,20f);
-				if(GUI.Button(rectButtonRemoveElement,"-")) {
-					parameter.lsArray[parameter.lsArray.Count-1].destroy();
-					parameter.lsArray.RemoveAt(parameter.lsArray.Count-1);
-					saveChanges = true;
-				}
-				Rect rectButtonAddElement = new Rect(rectButtonRemoveElement);
-				rectButtonAddElement.x += rectButtonRemoveElement.width+margin;
-				GUI.enabled = !isPlaying;
-				if(GUI.Button(rectButtonAddElement,"+")) {
-					AMEventParameter a = CreateInstance<AMEventParameter>();
-					a.setValueType(t.GetElementType());
-					parameter.lsArray.Add(a);
-					saveChanges = true;
-				}
-			}
-		}else if(t == typeof(bool)) {
-			// int field
-			height_field += 20f;
-			if(parameter.setBool(EditorGUI.Toggle(rect,name,parameter.val_bool))) saveChanges = true;
-		}else if((t == typeof(int))||(t == typeof(long))) {
-			// int field
-			height_field += 20f;
-			if(parameter.setInt(EditorGUI.IntField(rect,name,(int)parameter.val_int))) saveChanges = true;
-		}else if((t == typeof(float))||(t == typeof(double))) {
-			// float field
-			height_field += 20f;
-			if(parameter.setFloat(EditorGUI.FloatField(rect,name,(float)parameter.val_float))) saveChanges = true;
-		}else if(t == typeof(Vector2)) {
-			// vector2 field
-			height_field += 40f;
-			if(parameter.setVector2(EditorGUI.Vector2Field(rect,name,(Vector2)parameter.val_vect2))) saveChanges = true;
-		}else if(t == typeof(Vector3)) {
-			// vector3 field
-			height_field += 40f;
-			if(parameter.setVector3(EditorGUI.Vector3Field(rect,name,(Vector3)parameter.val_vect3))) saveChanges = true;
-		}else if(t == typeof(Vector4)) {
-			// vector4 field
-			height_field += 40f;
-			if(parameter.setVector4(EditorGUI.Vector4Field(rect,name,(Vector4)parameter.val_vect4))) saveChanges = true;
-		}else if(t == typeof(Color)) {
-			// color field
-			height_field += 40f;
-			if(parameter.setColor(EditorGUI.ColorField(rect,name,(Color)parameter.val_color))) saveChanges = true;
-		}else if(t == typeof(Rect)) {
-			// rect field
-			height_field += 60f;
-			if(parameter.setRect(EditorGUI.RectField(rect,name,(Rect)parameter.val_rect))) saveChanges = true;
-		}else if(t == typeof(string)) {
-			height_field += 20f;
-			// set default
-			if(parameter.val_string == null) parameter.val_string = "";
-			// string field
-			if(parameter.setString(EditorGUI.TextField(rect,name,(string)parameter.val_string))) saveChanges = true;
-		}else if(t == typeof(char)) {
-			height_field += 20f;
-			// set default
-			if(parameter.val_string == null) parameter.val_string = "";
-			// char (string) field
-			Rect rectLabelCharField = new Rect(rect.x,rect.y,146f,rect.height);
-			GUI.Label(rectLabelCharField,name);
-			Rect rectTextFieldChar = new Rect(rectLabelCharField.x+rectLabelCharField.width+margin,rectLabelCharField.y,rect.width-rectLabelCharField.width-margin,rect.height);
-			if(parameter.setString(GUI.TextField(rectTextFieldChar,parameter.val_string,1))) saveChanges = true;
-		}else if(t == typeof(GameObject)) {
-			height_field += 40f+margin;
-			// label
-			Rect rectLabelField = new Rect(rect);
-			GUI.Label(rectLabelField, name);
-			// GameObject field
-			EditorGUIUtility.LookLikeControls();
-			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
-			if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(GameObject),true))) saveChanges = true;
-			EditorGUIUtility.LookLikeControls();
-		}else if(t.BaseType == typeof(Behaviour) || t.BaseType == typeof(Component)) {
-			height_field += 40f+margin;
-			// label
-			Rect rectLabelField = new Rect(rect);
-			GUI.Label(rectLabelField, name);
-			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
-			EditorGUIUtility.LookLikeControls();
-			// field
-			if(t == typeof(Transform)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Transform),true))) saveChanges = true; }
-			else if(t == typeof(MeshFilter)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(MeshFilter),true))) saveChanges = true; }
-			else if(t == typeof(TextMesh)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(TextMesh),true))) saveChanges = true; }
-			else if(t == typeof(MeshRenderer)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(MeshRenderer),true))) saveChanges = true; }
-			//else if(t == typeof(ParticleSystem)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(ParticleSystem),true))) saveChanges = true; }
-			else if(t == typeof(TrailRenderer)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(TrailRenderer),true))) saveChanges = true; }
-			else if(t == typeof(LineRenderer)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(LineRenderer),true))) saveChanges = true; }
-			else if(t == typeof(LensFlare)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(LensFlare),true))) saveChanges = true; }
-			// halo
-			else if(t == typeof(Projector)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Projector),true))) saveChanges = true; }
-			else if(t == typeof(Rigidbody)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Rigidbody),true))) saveChanges = true; }
-			else if(t == typeof(CharacterController)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(CharacterController),true))) saveChanges = true; }
-			else if(t == typeof(BoxCollider)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(BoxCollider),true))) saveChanges = true; }
-			else if(t == typeof(SphereCollider)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(SphereCollider),true))) saveChanges = true; }
-			else if(t == typeof(CapsuleCollider)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(CapsuleCollider),true))) saveChanges = true; }
-			else if(t == typeof(MeshCollider)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(MeshCollider),true))) saveChanges = true; }
-			else if(t == typeof(WheelCollider)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(WheelCollider),true))) saveChanges = true; }
-			else if(t == typeof(TerrainCollider)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(TerrainCollider),true))) saveChanges = true; }
-			else if(t == typeof(InteractiveCloth)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(InteractiveCloth),true))) saveChanges = true; }
-			else if(t == typeof(SkinnedCloth)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(SkinnedCloth),true))) saveChanges = true; }
-			else if(t == typeof(ClothRenderer)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(ClothRenderer),true))) saveChanges = true; }
-			else if(t == typeof(HingeJoint)){ if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(HingeJoint),true))) saveChanges = true; }
-			else if(t == typeof(FixedJoint)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(FixedJoint),true))) saveChanges = true; }
-			else if(t == typeof(SpringJoint)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(SpringJoint),true))) saveChanges = true; }
-			else if(t == typeof(CharacterJoint)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(CharacterJoint),true))) saveChanges = true; }
-			else if(t == typeof(ConfigurableJoint)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(ConfigurableJoint),true))) saveChanges = true; }
-			else if(t == typeof(ConstantForce)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(ConstantForce),true))) saveChanges = true; }
-			//else if(t == typeof(NavMeshAgent)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(NavMeshAgent),true))) saveChanges = true; }
-			//else if(t == typeof(OffMeshLink)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(OffMeshLink),true))) saveChanges = true; }
-			else if(t == typeof(AudioListener)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioListener),true))) saveChanges = true; }
-			else if(t == typeof(AudioSource)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioSource),true))) saveChanges = true; }
-			else if(t == typeof(AudioReverbZone)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioReverbZone),true))) saveChanges = true; }
-			else if(t == typeof(AudioLowPassFilter)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioLowPassFilter),true))) saveChanges = true; }
-			else if(t == typeof(AudioHighPassFilter)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioHighPassFilter),true))) saveChanges = true; }
-			else if(t == typeof(AudioEchoFilter)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioEchoFilter),true))) saveChanges = true; }
-			else if(t == typeof(AudioDistortionFilter)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioDistortionFilter),true))) saveChanges = true; }
-			else if(t == typeof(AudioReverbFilter)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioReverbFilter),true))) saveChanges = true; }
-			else if(t == typeof(AudioChorusFilter)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(AudioChorusFilter),true))) saveChanges = true; }
-			else if(t == typeof(Camera)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Camera),true))) saveChanges = true; }
-			else if(t == typeof(Skybox)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Skybox),true))) saveChanges = true; }
-			// flare layer
-			else if(t == typeof(GUILayer)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(GUILayer),true))) saveChanges = true; }
-			else if(t == typeof(Light)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Light),true))) saveChanges = true; }
-			//else if(t == typeof(LightProbeGroup)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(LightProbeGroup),true))) saveChanges = true; }
-			else if(t == typeof(OcclusionArea)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(OcclusionArea),true))) saveChanges = true; }
-			//else if(t == typeof(OcclusionPortal)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(OcclusionPortal),true))) saveChanges = true; }
-			//else if(t == typeof(LODGroup)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(LODGroup),true))) saveChanges = true; }
-			else if(t == typeof(GUITexture)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(GUITexture),true))) saveChanges = true; }
-			else if(t == typeof(GUIText)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(GUIText),true))) saveChanges = true; }
-			else if(t == typeof(Animation)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Animation),true))) saveChanges = true; }
-			else if(t == typeof(NetworkView)) { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(NetworkView),true))) saveChanges = true; }
-			// wind zone
-			else {
-				
-				if(t.BaseType == typeof(Behaviour))
-				{ if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Behaviour),true))) saveChanges = true; }
-				else { if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Component),true))) saveChanges = true; }
-				
-			}
-			EditorGUIUtility.LookLikeControls();
-			//return;
-		}else if(t == typeof(UnityEngine.Object)) {
-			height_field += 40f+margin;
-			Rect rectLabelField = new Rect(rect);
-			GUI.Label(rectLabelField, name);
-			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
-			EditorGUIUtility.LookLikeControls();
-			if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(UnityEngine.Object),true))) saveChanges = true;
-			EditorGUIUtility.LookLikeControls();
-		} else if(t == typeof(Component)) {
-			Rect rectLabelField = new Rect(rect);
-			GUI.Label(rectLabelField, name);
-			Rect rectObjectField = new Rect(rect.x,rectLabelField.y+rectLabelField.height+margin,rect.width,16f);
-			EditorGUIUtility.LookLikeControls();
-			if(parameter.setObject(EditorGUI.ObjectField(rectObjectField,parameter.val_obj,typeof(Component),true))) saveChanges = true;
-			EditorGUIUtility.LookLikeControls();
-		}else {
-			height_field += 20f;
-			GUI.skin.label.wordWrap = true;
-			GUI.Label(rect,"Unsupported parameter type "+t.ToString()+".");
-		}
-		
-		return saveChanges;
-		
-	}
 
 	void showObjectFieldFor(AMTrack amTrack, float width_track, Rect rect) {
 		if(rect.width < 22f) return;
 		// show object field for track, used in OnGUI. Needs to be updated for every track type.
-		EditorGUIUtility.LookLikeControls();
 		// add objectfield for every track type
 		// translation
 		if(amTrack is AMTranslationTrack) {
@@ -1976,140 +1731,11 @@ public class AMTimeline : EditorWindow {
 			}
 		} else if(amTrack is AMCameraSwitcherTrack) {
 			// do nothing
-			//GUILayout.Space(width_track-padding_track*2);
 		}
 		EditorGUIUtility.LookLikeControls();
 	}
 	void showAlertMissingObjectType(string type) {
 		EditorUtility.DisplayDialog("Missing "+type,"You must add a "+type+" to the track before you can add keys.","Okay");
-	}
-	void showTransitionPicker(AMTrack track, AMCameraSwitcherKey key, float x = -1f, float y = -1f, float width = -1f) {
-		if(x >= 0f && y >= 0f && width >= 0f) {
-			width--;
-			float height = 22f;
-			Rect rectLabel = new Rect(x, y-1f, 40f, height);
-			int index = 0;
-
-			GUI.Label (rectLabel, "Fade");
-			Rect rectPopup = new Rect(rectLabel.x + rectLabel.width + 2f, y+3f, width - rectLabel.width - width_button -3f, height);
-			for(int i=0;i<AMTween.TransitionOrder.Length;i++) {
-				if(AMTween.TransitionOrder[i] == key.cameraFadeType) {
-					index = i;
-					break;
-				}
-			}
-			int newIndex = EditorGUI.Popup(rectPopup, index, AMTween.TransitionNames);
-			if(key.setCameraFadeType(AMTween.TransitionOrder[newIndex])) {
-				// reset parameters
-				AMTransitionPicker.setDefaultParametersForKey(ref key);
-				// update cache when modifying variables
-				track.updateCache();
-				// save data
-				EditorUtility.SetDirty(aData);
-				// preview current frame
-				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-				// refresh values
-				AMTransitionPicker.refreshValues();
-				// refresh code view
-			}
-			Rect rectButton = new Rect(width-width_button+1f,y,width_button,width_button);
-			if(GUI.Button(rectButton, tex_icon_popup)) {
-				AMTransitionPicker.setValues(key, track);
-				EditorWindow.GetWindow (typeof (AMTransitionPicker));
-			}
-		} else {
-			GUILayout.BeginHorizontal();
-				GUILayout.BeginVertical();
-					GUILayout.Space(1f);
-					GUILayout.Label ("Fade");
-				GUILayout.EndVertical();
-				GUILayout.BeginVertical();
-					GUILayout.Space(3f);
-					int index = 0;
-					for(int i=0;i<AMTween.TransitionOrder.Length;i++) {
-						if(AMTween.TransitionOrder[i] == key.cameraFadeType) {
-							index = i;
-							break;
-						}
-					}
-					int newIndex = EditorGUILayout.Popup(index, AMTween.TransitionNames);
-					if(key.setCameraFadeType(AMTween.TransitionOrder[newIndex])) {
-						// reset parameters
-						AMTransitionPicker.setDefaultParametersForKey(ref key);
-						// update cache when modifying variables
-						track.updateCache();
-						// save data
-						EditorUtility.SetDirty(aData);
-						// preview current frame
-						aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-						// refresh values
-						AMTransitionPicker.refreshValues();
-					}
-			
-				GUILayout.EndVertical();
-				if(GUILayout.Button(tex_icon_popup,GUILayout.Width(width_button),GUILayout.Height(width_button))) {
-					AMTransitionPicker.setValues(key, track);
-					EditorWindow.GetWindow (typeof (AMTransitionPicker));
-				}
-				GUILayout.Space(1f);
-			GUILayout.EndHorizontal();	
-		}
-	}
-	public static bool showEasePicker(AMTrack track, AMKey key, AnimatorData aData, float x=-1f,float y=-1f,float width=-1f) {
-		bool didUpdate = false;
-		//TODO undo
-//		if(x >= 0f && y >= 0f && width >= 0f) {
-//			width--;
-//			float height = 22f;
-//			Rect rectLabel = new Rect(x, y-1f, 40f, height);
-//			GUI.Label (rectLabel, "Ease");
-//			Rect rectPopup = new Rect(rectLabel.x + rectLabel.width + 2f, y+3f, width - rectLabel.width - 25f, height);
-//			if(key.setEaseType(EditorGUI.Popup(rectPopup,key.easeType,easeTypeNames))) {
-//				// update cache when modifying varaibles
-//				track.updateCache();
-//				// preview new position
-//				aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-//				// save data
-//				EditorUtility.SetDirty(aData);
-//				// refresh component
-//				didUpdate = true;
-//				// refresh values
-//				AMEasePicker.refreshValues();
-//			}
-//			Rect rectButton = new Rect(width-21f,y,22f,22f);
-//			if(GUI.Button(rectButton, tex_icon_popup)) {
-//				AMEasePicker.setValues(/*aData,*/key, track);
-//				EditorWindow.GetWindow (typeof (AMEasePicker));
-//			}
-//		} else {
-//			GUILayout.BeginHorizontal();
-//				GUILayout.BeginVertical();
-//					GUILayout.Space(1f);
-//					GUILayout.Label ("Ease");
-//				GUILayout.EndVertical();
-//				GUILayout.BeginVertical();
-//					GUILayout.Space(3f);
-//					if(key.setEaseType(EditorGUILayout.Popup(key.easeType,easeTypeNames))) {
-//						// update cache when modifying varaibles
-//						track.updateCache();
-//						// preview new position
-//						aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-//						// save data
-//						EditorUtility.SetDirty(aData);
-//						// refresh component
-//						didUpdate = true;
-//						// refresh values
-//						AMEasePicker.refreshValues();
-//					}
-//				GUILayout.EndVertical();
-//				if(GUILayout.Button(tex_icon_popup,GUILayout.Width(22f),GUILayout.Height(22f))) {
-//					AMEasePicker.setValues(/*aData,*/key, track);
-//					EditorWindow.GetWindow (typeof (AMEasePicker));
-//				}
-//				GUILayout.Space(1f);
-//			GUILayout.EndHorizontal();	
-//		}
-		return didUpdate;
 	}
 
 	void drawIndicator(int frame) {
@@ -2148,7 +1774,7 @@ public class AMTimeline : EditorWindow {
 		#region just started drag
 		// set start and end drag frames
 		if(justStartedDrag) {
-			if(isRenamingTrack != -1 || isRenamingTake) return;
+			if(isRenamingTrack != -1 ) return;
 			#region track / group
 			if(mouseOverElement == (int)ElementType.Track) {
 				draggingGroupElement = mouseOverGroupElement;
@@ -2407,42 +2033,7 @@ public class AMTimeline : EditorWindow {
 		}
 		#endregion
 	}	
-	void processUpdateMethodInfoCache(bool now = false) {
-		if(now) updateMethodInfoCacheBuffer = 0;
-		// update methodinfo cache if necessary
-		if(!aData)return;
-		if(aData.getCurrentTake().getTrackCount() <= 0) return;
-		if(aData.getCurrentTake().selectedTrack <= -1) return;
-		if(updateMethodInfoCacheBuffer > 0) updateMethodInfoCacheBuffer--;
-		if((indexMethodInfo == -1)&&(updateMethodInfoCacheBuffer<=0)) {
-		
-		// if track is event
-			if(aData.getCurrentTake().selectedTrack > -1 && aData.getCurrentTake().getSelectedTrack() is AMEventTrack) {
-				// if event track has key on selected frame
-				AMTrack selectedTrack = aData.getCurrentTake().getSelectedTrack();
-				if(selectedTrack.hasKeyOnFrame(aData.getCurrentTake().selectedFrame)) {
-					// update methodinfo cache
-					updateCachedMethodInfo((selectedTrack as AMEventTrack).obj);
-					updateMethodInfoCacheBuffer = updateRateMethodInfoCache;
-					// set index to method info index
-						
-					if(cachedMethodInfo.Count>0) {
-						AMEventKey eKey = (selectedTrack.getKeyOnFrame(aData.getCurrentTake().selectedFrame) as AMEventKey);
 
-						if(eKey.methodInfo != null) {
-							for (int i = 0; i< cachedMethodInfo.Count;i++) {
-								if(cachedMethodInfo[i] == eKey.methodInfo) {
-									indexMethodInfo = i;
-									return;
-								}
-							}
-						}
-						indexMethodInfo = 0;	
-					}	
-				}
-			}
-		}	
-	}
 	void processHandDragAcceleration() {
 		float speed = (int)((Mathf.Clamp(Mathf.Abs(handDragAccelaration),0,200)/12)*(aData.zoom+0.2f));
 		if(handDragAccelaration > 0) {
@@ -2613,7 +2204,7 @@ public class AMTimeline : EditorWindow {
 	void timelineSelectFrame(int _track, int _frame, bool deselectKeyboardFocus=true) {
 		// select a frame from the timeline
 		cancelTextEditting();
-		indexMethodInfo = -1;	// reset methodinfo index to update caches
+		EventLayout.resetIndexMethodInfo();
 		if(aData.getCurrentTake().getTrackCount()<=0) return;
 		// select frame
 		aData.getCurrentTake().selectFrame(_track,_frame,numFramesToRender, isShiftDown, isControlDown);
@@ -2624,6 +2215,11 @@ public class AMTimeline : EditorWindow {
 		// deselect keyboard focus
 		if (deselectKeyboardFocus)
 			GUIUtility.keyboardControl = 0;
+
+		if(customInspector == null)
+			customInspector = ScriptableObject.CreateInstance<CustomInspector>();
+		customInspector.ShowUtility();
+		customInspector.Repaint();
 	}
 	void timelineSelectObjectFor(AMTrack track) {
 		// translation obj
@@ -2682,31 +2278,19 @@ public class AMTimeline : EditorWindow {
 	
 	#region Set/Get
 	
-	string getNewTargetName() {
-		int count = 1;
-		while (true) {
-			if(GameObject.Find("Target"+count)) count++;
-			else break;
-		}
-		return "Target"+count;
-	}
-	void setDirtyKeys(AMTrack track) {
+
+	public static void setDirtyKeys(AMTrack track) {
 		foreach(AMKey key in track.keys) {
 			EditorUtility.SetDirty(key);	
 		}
 	}
-	void setDirtyCache(AMTrack track) {
+	public static void setDirtyCache(AMTrack track) {
 		foreach(AMAction action in track.cache) {
 			EditorUtility.SetDirty(action);	
 		}
 	}
-	void setDirtyTakes(List<AMTake> takes) {
-		foreach(AMTake take in takes) {
-			EditorUtility.SetDirty(take);	
-		}
-	}
-	void setDirtyTracks(AMTake take) {
-		foreach(AMTrack track in aData.getCurrentTake().trackValues) {
+	public static void setDirtyTracks(AMTake take) {
+		foreach(AMTrack track in take.trackValues) {
 			EditorUtility.SetDirty(track);	
 		}	
 	}
@@ -2819,21 +2403,7 @@ public class AMTimeline : EditorWindow {
 		#endregion
 		return "Unknown";
 	}
-	public string getMethodInfoSignature(MethodInfo methodInfo) {
-		ParameterInfo[] parameters = methodInfo.GetParameters();
-		// loop through parameters, add them to signature
-		string methodString = methodInfo.Name + " (";
-		for(int i=0;i<parameters.Length;i++) {
-			methodString += typeStringBrief(parameters[i].ParameterType);
-			if(i<parameters.Length-1) methodString += ", ";
-		}
-		methodString += ")";
-		return methodString;
-	}	
-	public string[] getMethodNames() {
-		// get all method names from every comonent on GameObject, and update methodinfo cache
-		return cachedMethodNames.ToArray();
-	}
+
 	public Texture getTrackIconTexture(AMTrack _track) {
 		if(_track is AMAnimationTrack) return texIconAnimation;
 		else if(_track is AMEventTrack ) return texIconEvent;
@@ -2868,14 +2438,8 @@ public class AMTimeline : EditorWindow {
 	#endregion
 	
 	#region Add/Delete
-	
-	void addTargetWithTranslationTrack(object key) {
-		addTarget(key, true);
-	}
-	void addTargetWithoutTranslationTrack(object key) {
-		addTarget(key, false);
-	}
-	void addTarget(object key, bool withTranslationTrack) {
+
+	public void addTarget(object key, bool withTranslationTrack) {
 		AMTrack sTrack = aData.getCurrentTake().getSelectedTrack();
 		AMOrientationKey oKey = key as AMOrientationKey;
 		// create target
@@ -2887,21 +2451,29 @@ public class AMTimeline : EditorWindow {
 		// update cache
 		sTrack.updateCache();
 		// preview new frame
-		aData.getCurrentTake().previewFrame(aData.getCurrentTake().selectedFrame);
-		// save data
-		setDirtyKeys(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
-		setDirtyCache(aData.getCurrentTake().getTrack(aData.getCurrentTake().selectedTrack));
+		aData.getCurrentTake().previewFrame(oKey.frame);
+		setDirtyKeys(sTrack);
+		setDirtyCache(sTrack);
 		// refresh component
 		refreshGizmos();
 		
 		// add to translation track
 		if(withTranslationTrack) {
-			objects_window = new List<GameObject>();
+			objects_window = new List<GameObject>();	
 			objects_window.Add(target);
-			addTrack((int)Track.Translation);	
+			AMTimeline.window.addTrack((int)AMTimeline.Track.Translation);
 		}
 	}
-	void addTrack(object trackType) {
+	private static string getNewTargetName() {
+		int count = 1;
+		while (true) {
+			if(GameObject.Find("Target"+count)) count++;
+			else break;
+		}
+		return "Target"+count;
+	}
+
+	public void addTrack(object trackType) {
 		// add one null GameObject if no GameObject dragged onto timeline (when clicked on new track button)
 		if(objects_window.Count <= 0) {
 			objects_window.Add(null);
@@ -3296,7 +2868,6 @@ public class AMTimeline : EditorWindow {
 			}
 		}
 		
-		
 		// show message if there are out of bounds keys
 		checkForOutOfBoundsFramesOnSelectedTrack();
 		// update cache
@@ -3325,40 +2896,6 @@ public class AMTimeline : EditorWindow {
 		contextCopyFrames();
 	}
 	
-	/*void contextPasteKeys() {
-		registerUndo("Paste Frames");
-		if(contextSelectionKeysBuffer.Count < 0) return;
-		// offset all keys beyond paste
-		int offset = (int)contextSelectionRange.y-(int)contextSelectionRange.x+1;
-		aData.getCurrentTake().getSelectedTrack().offsetKeysFromBy(contextMenuFrame,offset);
-		// add buffer keys to track
-		foreach(AMKey a in contextSelectionKeysBuffer) {
-			// offset keys based on selection range
-			a.frame += (contextMenuFrame-(int)contextSelectionRange.x);
-			aData.getCurrentTake().getSelectedTrack().keys.Add(a);
-			//a.destroy();
-		}
-		// clear buffer
-		contextSelectionKeysBuffer = new List<AMKey>();
-		// show message if there are out of bounds keys
-		checkForOutOfBoundsFramesOnSelectedTrack();
-		// update cache
-		aData.getCurrentTake().getSelectedTrack().updateCache();
-		AMCodeView.refresh();
-		// update selection
-		//   retrieve cached context selection 
-		aData.getCurrentTake().contextSelection = new List<int>();
-		foreach(int frame in cachedContextSelection) {
-			aData.getCurrentTake().contextSelection.Add(frame);	
-		}
-		// offset selection
-		for(int i = 0;i<aData.getCurrentTake().contextSelection.Count;i++) {
-			aData.getCurrentTake().contextSelection[i] += (contextMenuFrame-(int)contextSelectionRange.x);
-			
-		}
-		// copy again for multiple pastes
-		contextCopyFrames();
-	}*/
 	void contextSaveKeysToBuffer() {
 		if(aData.getCurrentTake().contextSelection.Count<=0) return;
 		// sort
@@ -3392,27 +2929,6 @@ public class AMTimeline : EditorWindow {
 			}
 		}
 	}
-	
-	/*void contextSaveKeysToBuffer() {
-		if(aData.getCurrentTake().contextSelection.Count<=0) return;
-		// sort
-		aData.getCurrentTake().contextSelection.Sort();
-		// set selection range
-		contextSelectionRange.x = aData.getCurrentTake().contextSelection[0];
-		contextSelectionRange.y = aData.getCurrentTake().contextSelection[aData.getCurrentTake().contextSelection.Count-1];
-		// set selection track
-		contextSelectionTrack = aData.getCurrentTake().selectedTrack;
-		
-		foreach(AMKey key in contextSelectionKeysBuffer) {
-			if(key == null) continue;
-			key.destroy();
-		}
-		contextSelectionKeysBuffer = new List<AMKey>();
-		foreach(AMKey key in aData.getCurrentTake().getContextSelectionKeys()) {
-			AMKey a = key.CreateClone();
-			contextSelectionKeysBuffer.Add(a);
-		}
-	}*/
 	
 	void contextCopyFrames() {
 		cachedContextSelection = new List<int>();
@@ -3493,23 +3009,7 @@ public class AMTimeline : EditorWindow {
 			return false;
 		}
 	}
-	public void updateCachedMethodInfo(GameObject go) {
-		if(!go) return;
-		cachedMethodInfo = new List<MethodInfo>();
-		cachedMethodNames = new List<string>();
-		cachedMethodInfoComponents = new List<Component>();
-		Component[] arrComponents = go.GetComponents(typeof(Component));
-			foreach(Component c in arrComponents) {
-				if(c.GetType().BaseType == typeof(Component) || c.GetType().BaseType == typeof(Behaviour)) continue;
-					MethodInfo[] methodInfos = c.GetType().GetMethods(methodFlags);
-					foreach(MethodInfo methodInfo in methodInfos) {
-						if((methodInfo.Name == "Start") || (methodInfo.Name == "Update") || (methodInfo.Name == "Main")) continue;
-						cachedMethodNames.Add(getMethodInfoSignature(methodInfo));
-						cachedMethodInfo.Add(methodInfo);
-						cachedMethodInfoComponents.Add(c);
-					}
-			}	
-	}
+
 	void checkForOutOfBoundsFramesOnSelectedTrack() {
 		List<AMTrack> selectedTracks = new List<AMTrack>();
 		int shift = 1;
@@ -3583,7 +3083,7 @@ public class AMTimeline : EditorWindow {
 		// reset all object transforms to frame 1
 		aData.getCurrentTake().previewFrame(1f);
 	}
-	void refreshGizmos() {
+	public void refreshGizmos() {
 		EditorUtility.SetDirty(aData);
 	}
 	void cancelTextEditting(bool toggleIsRenamingTake = false) {
@@ -3597,70 +3097,17 @@ public class AMTimeline : EditorWindow {
 		if(isRenamingTrack != -1) {
 			isRenamingTrack = -1;
 		}
-		if(isRenamingTake) {
-			aData.makeTakeNameUnique(aData.getCurrentTake());
-		}
-		if(toggleIsRenamingTake) {
-			isRenamingTake = !isRenamingTake;
-		} else  {
-			if(isRenamingTake) isRenamingTake = false;
-		}
 	}
-	WrapMode indexToWrapMode(int index) {
-		switch(index) {
-			case 0:
-				return WrapMode.Once;
-			case 1:
-				return WrapMode.Loop;
-			case 2:
-				return WrapMode.ClampForever;
-			case 3:
-				return WrapMode.PingPong;
-			default:
-				Debug.LogError("Animator: No Wrap Mode found for index "+index);
-				return WrapMode.Default;
-		}
-	}
+
 	string trimString(string _str, int max_chars) {
 		if(_str.Length<=max_chars) return _str;
 		return _str.Substring(0,max_chars)+"...";
 	}
-	string typeStringBrief(Type t) {
-		if(t.IsArray) return typeStringBrief(t.GetElementType())+"[]";
-		if(t == typeof(int)) return "int";
-		if(t == typeof(long)) return "long";
-		if(t == typeof(float)) return "float";
-		if(t == typeof(double)) return "double";
-		if(t == typeof(Vector2)) return "Vector2";
-		if(t == typeof(Vector3)) return "Vector3";
-		if(t == typeof(Vector4)) return "Vector4";
-		if(t == typeof(Color)) return "Color";
-		if(t == typeof(Rect)) return "Rect";
-		if(t == typeof(string)) return "string";
-		if(t == typeof(char)) return "char";
-		return t.Name;
-	}
-	int wrapModeToIndex(WrapMode wrapMode) {
-		switch(wrapMode) {
-			case WrapMode.Once:
-				return 0;
-			case WrapMode.Loop:
-				return 1;
-			case WrapMode.ClampForever:
-				return 2;
-			case WrapMode.PingPong:
-				return 3;
-			default:
-				Debug.LogError("Animator: No Index found for WrapMode "+wrapMode.ToString());
-				return -1;
-		}	
-	}
+
 	float maxScrollView() {
 		return height_all_tracks;
 	}
-	
 	#endregion
 	
 	#endregion
 }
-

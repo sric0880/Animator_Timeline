@@ -203,8 +203,8 @@ public class AMRotationTrack : AMTrack {
 		Debug.LogError("Animator: Could not get "+obj.name+" rotation at frame '"+frame+"'");
 		return new Quaternion(0f,0f,0f,0f);
 	}
-	public Vector4 getInitialRotation() {
-		return (keys[0] as AMRotationKey).getRotationQuaternion();	
+	public Vector3 getInitialRotation() {
+		return (keys[0] as AMRotationKey).getRotation();
 	}
 	
 	public override AnimatorTimeline.JSONInit getJSONInit ()
