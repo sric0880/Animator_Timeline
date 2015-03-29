@@ -3,12 +3,12 @@ using System.Collections;
 
 [System.Serializable]
 public class AMAnimationKey : AMKey {
-	
-	public WrapMode wrapMode;	// animation wrap mode
-	public AnimationClip amClip;
-	public bool crossfade = true;
-	public float crossfadeTime = 0.3f;
-	
+
+	public WrapMode wrapMode = WrapMode.Once;	// animation wrap mode
+	public string clipName = "";
+	public string layerName = "";
+	public float length = 0f;
+
 	public bool setWrapMode(WrapMode wrapMode) {
 		if(this.wrapMode != wrapMode) {
 			this.wrapMode = wrapMode;
@@ -16,40 +16,33 @@ public class AMAnimationKey : AMKey {
 		}
 		return false;
 	}
-	
-	public bool setAmClip(AnimationClip clip) {
-		if(amClip != clip) {
-			amClip = clip;
+
+	public bool setClipName(string name) {
+		if(clipName != name) {
+			clipName = name;
 			return true;
 		}
 		return false;
 	}
-	
-	public bool setCrossFade(bool crossfade) {
-		if(this.crossfade != crossfade) {
-			this.crossfade = crossfade;
+
+	public bool setLayerName(string name) {
+		if(layerName != name) {
+			layerName = name;
 			return true;
 		}
 		return false;
 	}
-	
-	public bool setCrossfadeTime(float crossfadeTime) {
-		if(this.crossfadeTime != crossfadeTime) {
-			this.crossfadeTime = crossfadeTime;
-			return true;
-		}
-		return false;
-	}
-	
-		// copy properties from key
+
+	// copy properties from key
 	public override AMKey CreateClone ()
 	{
 		
 		AMAnimationKey a = ScriptableObject.CreateInstance<AMAnimationKey>();
 		a.frame = frame;
+		a.clipName = clipName;
 		a.wrapMode = wrapMode;
-		a.amClip = amClip;
-		a.crossfade = crossfade;
+		a.layerName = layerName;
+		a.length = length;
 		
 		return a;
 	}

@@ -56,7 +56,6 @@ public class AMCameraSwitcherKey : AMKey {
 	
 	public override AMKey CreateClone ()
 	{
-		
 		AMCameraSwitcherKey a = ScriptableObject.CreateInstance<AMCameraSwitcherKey>();
 		a.frame = frame;
 		a.type = type;

@@ -36,16 +36,10 @@ public class AMTrack : ScriptableObject {
 	public virtual void drawGizmos(float gizmo_size) {}
 	
 	// preview frame
-	public virtual void previewFrame(float frame, AMTrack extraTrack = null) { }
+	public virtual void previewFrame(float frame) {}
 	
 	// update cache
 	public virtual void updateCache() { 
-		AMCameraFade.doShouldUpdateStill();
-	}
-	
-	public virtual AnimatorTimeline.JSONInit getJSONInit() {
-		Debug.LogWarning("Animator: No override for getJSONInit()");
-		return new AnimatorTimeline.JSONInit();
 	}
 	
 	// get key on frame
@@ -119,15 +113,6 @@ public class AMTrack : ScriptableObject {
 		destroyCache();
 		// destroy track
 		Object.DestroyImmediate(this);
-	}
-	
-	public virtual List<GameObject> getDependencies()
-	{
-		return new List<GameObject>();	
-	}
-	
-	public virtual List<GameObject> updateDependencies(List<GameObject> newReferences, List<GameObject> oldReferences) {
-		return new List<GameObject>();
 	}
 	
 	public void destroyCache() {

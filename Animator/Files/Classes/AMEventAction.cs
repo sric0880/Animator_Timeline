@@ -26,27 +26,7 @@ public class AMEventAction : AMAction {
 			
 		}
 	}
-	public override void execute(int frameRate, float delay) {
-		if(useSendMessage) {
-			if(component == null || methodName == null) return;
-			if(parameters == null || parameters.Count <= 0) AMTween.SendMessage(component.gameObject, AMTween.Hash ("delay", getWaitTime(frameRate,delay), "methodname", methodName));
-			else {
-				AMTween.SendMessage(component.gameObject, AMTween.Hash ("delay", getWaitTime(frameRate,delay), "methodname", methodName, "parameter", parameters[0].toObject()));
-			}
-			return;
-		}
-		if(component == null || methodInfo == null) return;
-		object[] arrParams = new object[parameters.Count];
-		for(int i=0;i<parameters.Count;i++) {
-			if(parameters[i].isArray()) {
-				setObjectInArray(ref arrParams[i],parameters[i].lsArray);
-			} else {
-				arrParams[i] = parameters[i].toObject();
-			}
-		}
-		if(arrParams.Length<=0) arrParams = null;
-		AMTween.InvokeMethod(component,AMTween.Hash ("delay",getWaitTime(frameRate,delay),"methodinfo",methodInfo,"parameters",arrParams));
-	}
+
 	public void setObjectInArray(ref object obj, List<AMEventParameter> lsArray) {
 		if(lsArray.Count<=0) return;
 		int valueType = lsArray[0].valueType;
@@ -132,41 +112,7 @@ public class AMEventAction : AMAction {
 		}	
 		obj = null;
 	}
-	public string ToString(int codeLanguage, int frameRate, string methodInfoVarName) {
-		if(component == null) return null;
-		string s = "";
-		if(useSendMessage) {
-			if(methodName == null) return null;
-			
-			
-			if(codeLanguage == 0) {
-				// c#
-				s += "AMTween.SendMessage(obj.gameObject, AMTween.Hash (\"delay\", "+getWaitTime(frameRate,0f)+"f, \"methodname\", \""+methodName+"\"";
-				if(parameters != null && parameters.Count>0) s += ", \"parameter\", "+parametersToString(codeLanguage);
-				s += "));";
-				
-			} else {
-				s += "AMTween.SendMessage(obj.gameObject, {\"delay\": "+getWaitTime(frameRate,0f)+", \"methodname\": \""+methodName+"\"";
-				if(parameters != null && parameters.Count>0) s += ", \"parameter\": "+parametersToString(codeLanguage);
-				s += "});";
-			}
-			return s;
-		}
-		
-		if(codeLanguage == 0) {
-			// c#
-			s += "AMTween.InvokeMethod("+methodInfoVarName+"CMP, AMTween.Hash (\"delay\", "+getWaitTime(frameRate,0f)+"f, \"methodinfo\", "+methodInfoVarName;//obj.methodinfo";
-			if(parameters != null && parameters.Count>0) s += ", \"parameters\", new object[]{"+parametersToString(codeLanguage)+"}";
-			s += "));";
-			
-		} else {
-			s += "AMTween.InvokeMethod("+methodInfoVarName+"CMP, {\"delay\": "+getWaitTime(frameRate,0f)+", \"methodinfo\": "+methodInfoVarName;//obj.methodinfo";
-			if(parameters != null && parameters.Count>0) s += ", \"parameters\": ["+parametersToString(codeLanguage)+"]";
-			s += "});";
-		}
-		return s;
-	}
-	
+
 	private string parametersToString(int codeLanguage) {
 		string s ="";
 		for(int i=0;i<parameters.Count;i++) {
@@ -271,33 +217,5 @@ public class AMEventAction : AMAction {
 		}
 		if(obj == null) return null;
 		else return obj.ToString();;
-	}
-	
-	public override AnimatorTimeline.JSONAction getJSONAction (int frameRate)
-	{
-		if(component == null) return null;
-		
-		AnimatorTimeline.JSONAction a = new AnimatorTimeline.JSONAction();
-		a.delay = getWaitTime(frameRate,0f);
-		a.go = component.gameObject.name;
-		if(useSendMessage) {
-			if(methodName == null) return null;
-			a.method = "sendmessage";
-			a.strings = new string[]{methodName};
-			if(parameters != null && parameters.Count > 0) {
-				// set one param ( parameters[0].toObject() )
-				a.eventParams = new AnimatorTimeline.JSONEventParameter[]{parameters[0].toJSON()};
-			}
-		} else {
-			if(methodInfo == null) return null;
-			
-			a.method = "invokemethod";
-			a.eventParams = new AnimatorTimeline.JSONEventParameter[parameters.Count];
-			for(int i=0;i<parameters.Count;i++) {
-				a.eventParams[i] = parameters[i].toJSON();	
-			}
-			a.strings = new string[]{component.GetType().Name,methodInfo.Name};
-		}
-		return a;
 	}
 }

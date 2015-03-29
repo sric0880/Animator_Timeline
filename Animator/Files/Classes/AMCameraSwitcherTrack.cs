@@ -93,68 +93,52 @@ public class AMCameraSwitcherTrack : AMTrack {
 		base.updateCache();
 	}
 	
-	public override void previewFrame(float frame, AMTrack extraTrack = null) {
+	public override void previewFrame(float frame) {
 		
 		if(cache == null || cache.Count <= 0) {
 			return;
 		}
 		
 		bool isPreview = !Application.isPlaying;
-		//GameObject go = GameObject.Find ("AMCameraFade");
-		//AMCameraFade cf = null;
-		//if(go) cf = (AMCameraFade) go.GetComponent(typeof(AMCameraFade));
-		
-		
+
 		for(int i=0;i<cache.Count;i++) {
 			// before first frame
 			if(frame <= (cache[i] as AMCameraSwitcherAction).startFrame) {
-				//if(cf) DestroyImmediate(cf.gameObject);
 				AMCameraFade.reset();
 				if(!(cache[i] as AMCameraSwitcherAction).hasStartTarget()) return;
 				
 				if((cache[i] as AMCameraSwitcherAction).startTargetType == 0) {
-					//(cache[i] as AMCameraSwitcherAction).startCamera.targetTexture = null;
 					AMTween.SetTopCamera((cache[i] as AMCameraSwitcherAction).startCamera,cachedAllCameras);
 				} else {
 					showColor((cache[i] as AMCameraSwitcherAction).startColor,isPreview);
 					// or color # TO DO #
 				}
-				
 				return;
 			// between first and last frame
 			} else if(frame <= (cache[i] as AMCameraSwitcherAction).endFrame) {
 				
 				if(!(cache[i] as AMCameraSwitcherAction).hasStartTarget() || !(cache[i] as AMCameraSwitcherAction).hasEndTarget()) return;
-					// targets are equal
-					if((cache[i] as AMCameraSwitcherAction).targetsAreEqual()) {
-						
-						//if(cf) DestroyImmediate(cf.gameObject);
-						AMCameraFade.reset();
-						if((cache[i] as AMCameraSwitcherAction).startTargetType == 0) {
-							// use camera (cache[i] as AMCameraSwitcherAction) startTarget
-							//(cache[i] as AMCameraSwitcherAction).startCamera.targetTexture = null;
-							// if not first frame, set top camera
-							AMTween.SetTopCamera((cache[i] as AMCameraSwitcherAction).startCamera,cachedAllCameras);
-						} else {
-							showColor((cache[i] as AMCameraSwitcherAction).startColor,isPreview);
-							// or color # TO DO #
-						}
+				// targets are equal
+				if((cache[i] as AMCameraSwitcherAction).targetsAreEqual()) {
+					AMCameraFade.reset();
+					if((cache[i] as AMCameraSwitcherAction).startTargetType == 0) {
+						AMTween.SetTopCamera((cache[i] as AMCameraSwitcherAction).startCamera,cachedAllCameras);
 					} else {
-						//if((cache[i] as AMCameraSwitcherAction).endTargetType == 0) (cache[i] as AMCameraSwitcherAction).endCamera.targetTexture = null;
-						AMCameraFade.clearRenderTexture();
-						// preview transition: (cache[i] as AMCameraSwitcherAction).cameraFadeType
-						previewCameraFade(frame, (cache[i] as AMCameraSwitcherAction), isPreview);
+						showColor((cache[i] as AMCameraSwitcherAction).startColor,isPreview);
+						// or color # TO DO #
 					}
+				} else {
+					AMCameraFade.clearRenderTexture();
+					//Very important core code!!
+					previewCameraFade(frame, (cache[i] as AMCameraSwitcherAction), isPreview);
+				}
 				return;
 			// after last frame
 			} else if(i == cache.Count-2) {
-				//if(cf) DestroyImmediate(cf.gameObject);
 				AMCameraFade.reset();
 				if(!(cache[i] as AMCameraSwitcherAction).hasEndTarget()) return;
 				// use camera (cache[i] as AMCameraSwitcherAction) endTarget
 				if((cache[i] as AMCameraSwitcherAction).endTargetType == 0) {
-					// use camera (cache[i] as AMCameraSwitcherAction) startTarget
-					//(cache[i] as AMCameraSwitcherAction).endCamera.targetTexture = null;
 					AMTween.SetTopCamera((cache[i] as AMCameraSwitcherAction).endCamera,cachedAllCameras);
 				} else {
 					showColor((cache[i] as AMCameraSwitcherAction).endColor,isPreview);
@@ -283,56 +267,6 @@ public class AMCameraSwitcherTrack : AMTrack {
 				}
 			}
 		}
-
-	}
-	
-	/*public static Vector2 GetMainGameViewSize()
-	{
-	    System.Type T = System.Type.GetType("UnityEditor.GameView,UnityEditor");
-	    System.Reflection.MethodInfo GetSizeOfMainGameView = T.GetMethod("GetSizeOfMainGameView",System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-	    System.Object Res = GetSizeOfMainGameView.Invoke(null,null);
-	    return (Vector2)Res;
-	}*/
-	
-	public struct cfTuple {
-		public int frame;
-		public int type1;
-		public int type2;
-		public Camera camera1;
-		public Camera camera2;
-		public bool isReversed;
-		
-		public cfTuple(int _frame, int _type1, int _type2, Camera _camera1, Camera _camera2, bool _isReversed) {
-			frame = _frame;
-			type1 = _type1;
-			type2 = _type2;
-			camera1 = _camera1;
-			camera2 = _camera2;
-			isReversed = _isReversed;
-		}
-		
-	}
-	public cfTuple getCameraFadeTupleForFrame(int frame) {
-		if(cache == null || cache.Count <= 0) {
-			return new cfTuple(0,0,0,null,null,false);
-		}
-		for(int i=0;i<cache.Count;i++) {
-
-			// compact
-			if(frame < (cache[i] as AMCameraSwitcherAction).startFrame) {
-				break;
-			}
-			else if(frame < (cache[i] as AMCameraSwitcherAction).endFrame) {
-				if(!(cache[i] as AMCameraSwitcherAction).still || (cache[i] as AMCameraSwitcherAction).cameraFadeType == (int)AMTween.Fade.None || (cache[i] as AMCameraSwitcherAction).targetsAreEqual()) break;
-				bool isReversed = (cache[i] as AMCameraSwitcherAction).isReversed();
-				AMCameraSwitcherAction action = (cache[i] as AMCameraSwitcherAction);
-				
-				if(isReversed) return new cfTuple(action.endFrame, action.endTargetType, action.startTargetType, action.endCamera, action.startCamera, isReversed);
-				else return new cfTuple(action.startFrame, action.startTargetType, action.endTargetType, action.startCamera, action.endCamera, isReversed);
-				//return new cfTuple((isReversed ? (cache[i] as AMCameraSwitcherAction).endFrame : (cache[i] as AMCameraSwitcherAction).startFrame),(cache[i] as AMCameraSwitcherAction).startCamera,(cache[i] as AMCameraSwitcherAction).endCamera,isReversed);
-			}
-		}
-		return new cfTuple(0,0,0,null,null,false);
 	}
 	
 	private void showColor(Color color, bool isPreview) {
@@ -363,68 +297,4 @@ public class AMCameraSwitcherTrack : AMTrack {
 		// send event to game view to repaint OnGUI
 		if(!Application.isPlaying && shouldRepaint) cf.transform.position = new Vector3(cf.transform.position.x,cf.transform.position.y,cf.transform.position.z);
 	}
-	
-	public override AnimatorTimeline.JSONInit getJSONInit ()
-	{
-		if(keys.Count <= 0) return null;
-		string _type;
-		if((keys[0] as AMCameraSwitcherKey).type == 0) {
-			if((keys[0] as AMCameraSwitcherKey).camera == null) return null;
-			_type = "camera";
-		} else {
-			_type = "color";
-		}
-		AnimatorTimeline.JSONInit init = new AnimatorTimeline.JSONInit();
-		init.type = "cameraswitcher";
-		init.typeExtra = _type;
-		if(_type == "camera") init.go = (keys[0] as AMCameraSwitcherKey).camera.gameObject.name;
-		else {
-			AnimatorTimeline.JSONColor c = new AnimatorTimeline.JSONColor();
-			c.setValue((keys[0] as AMCameraSwitcherKey).color);
-			init._color = c;
-		}
-		// all cameras
-		Camera[] cameras = getAllCameras();
-		init.strings = new string[cameras.Length];
-		for(int i=0; i<cameras.Length;i++) {
-			init.strings[i] = cameras[i].gameObject.name;
-		}
-		// all textures
-		/*Texture[] textures = getAllTextures();
-		init.stringsExtra = new string[textures.Length];
-		for(int i=0; i<textures.Length;i++) {
-			init.stringsExtra[i] = textures[i].name;
-		}*/
-		return init;
-	}
-	
-	public override List<GameObject> getDependencies() {
-		List<GameObject> ls = new List<GameObject>();
-		foreach(AMCameraSwitcherKey key in keys) {
-			if(key.type == 0 && key.camera) ls.Add(key.camera.gameObject);
-		}
-		return ls;
-	}
-	
-	public override List<GameObject> updateDependencies (List<GameObject> newReferences, List<GameObject> oldReferences)
-	{
-		List<GameObject> lsFlagToKeep = new List<GameObject>();
-		for(int i=0;i<oldReferences.Count;i++) {
-			foreach(AMCameraSwitcherKey key in keys) {
-				if(key.type == 0 && key.camera && oldReferences[i] == key.camera.gameObject) {
-					Camera _camera = (Camera) newReferences[i].GetComponent(typeof(Camera));
-					// missing camera
-					if(!_camera) {
-						Debug.LogWarning("Animator: Camera Switcher component 'Camera' not found on new reference for GameObject '"+key.camera.gameObject.name+"'. Duplicate not replaced.");
-						lsFlagToKeep.Add(oldReferences[i]);
-						continue;
-					}
-					key.camera = _camera;
-				}
-			}
-		}
-		
-		return lsFlagToKeep;
-	}
-
 }

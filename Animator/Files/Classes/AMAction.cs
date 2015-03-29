@@ -5,9 +5,21 @@ using System.Collections.Generic;
 // holds an action to be parsed in game view
 [System.Serializable]
 public class AMAction : ScriptableObject  {
+
 	public int startFrame;
+	public virtual int NumberOfFrames { get {return 1;} }
+
+	public float getWaitTime(int frameRate, float delay) {
+		return ((float)startFrame-1f)/(float)frameRate - delay;
+	}
+
+	public void destroy() {
+		Object.DestroyImmediate(this);	
+	}
+
 	public int easeType = (int)AMTween.EaseType.linear; 			// ease type, AMTween.EaseType enum
 	public List<float> customEase = new List<float>();
+	
 	private AnimationCurve _cachedEaseCurve;
 	public AnimationCurve easeCurve {
 		get {
@@ -16,26 +28,19 @@ public class AMAction : ScriptableObject  {
 		}
 	}
 	
-	public virtual string ToString(int codeLanguage, int frameRate) {
-		return "(Error: No override for ToString)";
-	}
-	public virtual void execute(int frameRate, float delayModifier) {
-		Debug.LogError ("Animator: No override for execute.");	
-	}
-	
-	public float getWaitTime(int frameRate, float delay) {
-		return ((float)startFrame-1f)/(float)frameRate - delay;
-	}
-	
-	public virtual int getNumberOfFrames() {
-		return 1;
-	}
-	public void destroy() {
-		Object.DestroyImmediate(this);	
-	}
-	
-	public virtual AnimatorTimeline.JSONAction getJSONAction(int frameRate) {
-		return null;
+	public bool setEaseType(int easeType) {
+		if(easeType != this.easeType) {
+			this.easeType = easeType;
+			if(easeType == 32 && customEase.Count <= 0) {
+				// set up default custom ease with linear
+				customEase = new List<float>() {
+					0f,0f,1f,1f,
+					1f,1f,1f,1f
+				};
+			}
+			return true;	
+		}
+		return false;
 	}
 	
 	public void setCustomEase(AnimationCurve curve) {
@@ -46,10 +51,10 @@ public class AMAction : ScriptableObject  {
 			customEase.Add(k.inTangent);
 			customEase.Add(k.outTangent);
 		}
+		_cachedEaseCurve = null;
 	}
 	
 	public AnimationCurve getCustomEaseCurve() {
-		
 		AnimationCurve curve = new AnimationCurve();
 		if(customEase.Count < 0) {
 			return curve;
@@ -67,43 +72,5 @@ public class AMAction : ScriptableObject  {
 	public bool hasCustomEase() {
 		if(easeType == 32) return true;
 		return false;
-	}
-	
-	public string getEaseString(int codeLanguage)
-	{
-		string s = "";
-		if(hasCustomEase()) {
-			if(codeLanguage == 0) {
-				s += "\"easecurve\", AMTween.GenerateCurve(new float[]{";
-				for(int i=0;i<easeCurve.keys.Length;i++) {
-					s += easeCurve.keys[i].time.ToString()+"f, ";
-					s += easeCurve.keys[i].value.ToString()+"f, ";
-					s += easeCurve.keys[i].inTangent.ToString()+"f, ";
-					s += easeCurve.keys[i].outTangent.ToString()+"f";
-					if(i < easeCurve.keys.Length-1) s+= ", ";
-				}	
-				s += "})";				
-			} else {
-				s += "\"easecurve\": AMTween.GenerateCurve([";
-				for(int i=0;i<easeCurve.keys.Length;i++) {
-					s += easeCurve.keys[i].time.ToString()+", ";
-					s += easeCurve.keys[i].value.ToString()+", ";
-					s += easeCurve.keys[i].inTangent.ToString()+", ";
-					s += easeCurve.keys[i].outTangent.ToString();
-					if(i < easeCurve.keys.Length-1) s+= ", ";
-				}
-				s += "])";
-			}
-		} else {
-			AMTween.EaseType ease = (AMTween.EaseType)easeType;
-			s += "\"easetype\", \""+ease.ToString()+"\"";
-		}
-		return s;
-	}
-	
-	public void setupJSONActionEase(AnimatorTimeline.JSONAction a) {
-		a.easeType = easeType;
-		if(hasCustomEase()) a.customEase = customEase.ToArray();
-		else a.customEase = new float[]{};
 	}
 }

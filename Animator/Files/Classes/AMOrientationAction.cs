@@ -15,63 +15,14 @@ public class AMOrientationAction : AMAction {
 	public Vector3 startPosition;
 	public Vector3 endPosition;
 	
-	public override string ToString (int codeLanguage, int frameRate)
-	{
-		if(endFrame == -1 || !startTarget) return null;
-		string s;
-		if(isLookFollow()) {
-			if(codeLanguage == 0) {
-			// c#
-				s = "AMTween.LookFollow (obj.gameObject, AMTween.Hash (\"delay\", "+getWaitTime(frameRate,0f)+"f, \"time\", "+getTime(frameRate)+"f, ";
-				s += "\"looktarget\", GameObject.Find(\""+startTarget.gameObject.name+"\").transform";
-				s += "));";
-			} else {
-			// js
-				s = "AMTween.LookFollow (obj.gameObject, {\"delay\": "+getWaitTime(frameRate,0f)+", \"time\": "+getTime(frameRate)+", ";
-				s += "\"looktarget\": GameObject.Find(\""+startTarget.gameObject.name+"\").transform";
-				s += "});";
-			}
-			return s;
-		} else {
-			if(!endTarget) return null;
-			if(codeLanguage == 0) {
-			// c#
-				s = "AMTween.LookToFollow (obj.gameObject, AMTween.Hash (\"delay\", "+getWaitTime(frameRate,0f)+"f, \"time\", "+getTime(frameRate)+"f, ";
-				s += "\"looktarget\", GameObject.Find(\""+endTarget.gameObject.name+"\").transform, ";
-				if(isSetEndPosition) s += "\"endposition\", new Vector3("+endPosition.x+"f, "+endPosition.y+"f, "+endPosition.z+"f), ";
-				s += getEaseString(codeLanguage);
-				s += "));";
-			} else {
-			// js
-				s = "AMTween.LookToFollow (obj.gameObject, {\"delay\": "+getWaitTime(frameRate,0f)+", \"time\": "+getTime(frameRate)+", ";
-				s += "\"looktarget\": GameObject.Find(\""+endTarget.gameObject.name+"\").transform, ";
-				if(isSetEndPosition) s += "\"endposition\", Vector3("+endPosition.x+", "+endPosition.y+", "+endPosition.z+"), ";
-				s += getEaseString(codeLanguage);
-				s += "});";
-			}
-			return s;
+	public override int NumberOfFrames {
+		get {
+			return endFrame-startFrame;
 		}
 	}
 	
-	public override void execute(int frameRate, float delay) {
-		if(!obj) return;
-		if(endFrame == -1) return;
-		// if start and end target are the same, look follow
-		if(isLookFollow()) {
-			AMTween.LookFollow(obj.gameObject,AMTween.Hash ("delay",getWaitTime(frameRate, delay),"time",getTime(frameRate),"looktarget",startTarget));
-		// look to follow
-		} else {
-			if(hasCustomEase()) AMTween.LookToFollow(obj.gameObject,AMTween.Hash ("delay",getWaitTime(frameRate, delay),"time",getTime (frameRate),"looktarget",endTarget,"endposition",(isSetEndPosition ? (Vector3?) endPosition : null),"easecurve",easeCurve));
-			else AMTween.LookToFollow(obj.gameObject,AMTween.Hash ("delay",getWaitTime(frameRate, delay),"time",getTime (frameRate),"looktarget",endTarget,"endposition",(isSetEndPosition ? (Vector3?) endPosition : null),"easetype",(AMTween.EaseType)easeType));
-		}		
-	}
-	
-	public override int getNumberOfFrames() {
-		return endFrame-startFrame;
-	}
-	
 	public float getTime(int frameRate) {
-		return (float)getNumberOfFrames()/(float)frameRate;	
+		return (float)NumberOfFrames/(float)frameRate;	
 	}
 	
 	public bool isLookFollow() {
@@ -112,29 +63,5 @@ public class AMOrientationAction : AMAction {
 		
 		
 		return Quaternion.Euler(eCurrent);
-	}
-	
-	public override AnimatorTimeline.JSONAction getJSONAction (int frameRate)
-	{
-		if(!obj || endFrame == -1) return null;
-		AnimatorTimeline.JSONAction a = new AnimatorTimeline.JSONAction();
-		a.go = obj.gameObject.name;
-		a.delay = getWaitTime(frameRate,0f);
-		a.time = getTime(frameRate);
-		if(isLookFollow()) {
-			a.method = "lookfollow";
-			a.strings = new string[]{startTarget.gameObject.name};
-
-		} else {
-			a.method = "looktofollow";	
-			a.strings = new string[]{endTarget.gameObject.name};
-			if(isSetEndPosition) {
-				a.setPath(new Vector3[]{endPosition});
-			}
-		}
-		
-		setupJSONActionEase(a);
-		
-		return a;
 	}
 }

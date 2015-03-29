@@ -22,14 +22,15 @@ public class AMSettings : EditorWindow {
 		window = null;
 		if((aData)&& saveChanges) {
 			bool saveNumFrames = true;
-			if((numFrames < aData.getCurrentTake().numFrames) && (aData.getCurrentTake().hasKeyAfter(numFrames))) {
+			if((numFrames < aData.numFrames) && (aData.getCurrentTake().hasKeyAfter(aData.numFrames))) {
 				if(!EditorUtility.DisplayDialog("Data Will Be Lost","You will lose some keys beyond frame "+numFrames+" if you continue.", "Continue Anway","Cancel")) {
 					saveNumFrames = false;
 				}
 			}
 			if(saveNumFrames) {
 				// save numFrames
-				aData.getCurrentTake().numFrames = numFrames;
+				aData.numFrames = numFrames;
+				AnimatorData.StaticNumFrames = numFrames;
 				aData.getCurrentTake().deleteKeysAfter(numFrames);
 		
 				// save data
@@ -38,7 +39,8 @@ public class AMSettings : EditorWindow {
 				}
 			}
 			// save frameRate
-			aData.getCurrentTake().frameRate = frameRate;
+			aData.frameRate = frameRate;
+			AnimatorData.StaticFrameRate = frameRate;
 			EditorWindow.GetWindow (typeof (AMTimeline)).Repaint();
 			// save data
 			EditorUtility.SetDirty(aData);
@@ -75,8 +77,8 @@ public class AMSettings : EditorWindow {
 		GameObject go = GameObject.Find ("AnimatorData");
 		if(go) {
 			aData = (AnimatorData) go.GetComponent ("AnimatorData");
-			numFrames = aData.getCurrentTake().numFrames;
-			frameRate = aData.getCurrentTake().frameRate;
+			numFrames = aData.numFrames;
+			frameRate = aData.frameRate;
 		}
 	}
 }

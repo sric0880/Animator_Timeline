@@ -10,8 +10,6 @@ public class CustomInspector : EditorWindow
 
 	void OnEnable() {
 		this.title = "Inspector";
-		
-		loadAnimatorData();
 	}
 
 	public static void updateView(AMTrack track, float _frame)
@@ -19,13 +17,13 @@ public class CustomInspector : EditorWindow
 		// preview
 		AMTimeline.window.aData.getCurrentTake().previewFrame(_frame);
 		updateView (track);
+		AMTimeline.window.Repaint();
 	}
 
 	public static void updateView(AMTrack track)
 	{
 		saveData(track);
-		// refresh component
-		AMTimeline.window.refreshGizmos();
+		AMTimeline.window.saveAnimatorData();
 	}
 
 	public static void saveData(AMTrack track)
@@ -35,10 +33,16 @@ public class CustomInspector : EditorWindow
 	}
 	void OnGUI()
 	{
+		if (aData.inPlayMode) {
+			//not editable
+			EditorGUILayout.HelpBox("Cannot edit in play mode", MessageType.Info);
+			return;
+		}
 		selectedTrack = aData.getCurrentTake().selectedTrack;
 		selectedFrame = aData.getCurrentTake().selectedFrame;
+		if(selectedTrack <= -1 || selectedFrame == 0) return;
 		AMTrack sTrack = aData.getCurrentTake().getSelectedTrack();
-		if(selectedTrack <= -1 || selectedFrame == 0 || !sTrack.hasKeyOnFrame(selectedFrame)) return;
+		if (!sTrack.hasKeyOnFrame(selectedFrame)) return;
 
 		if(sTrack is AMTranslationTrack) {
 			AMTranslationTrack tt = (sTrack as AMTranslationTrack);
@@ -92,7 +96,7 @@ public class CustomInspector : EditorWindow
 			// preview new position
 			AMTimeline.window.aData.getCurrentTake().previewFrame(key.frame);
 			// save data
-			AMTimeline.window.refreshGizmos();
+			AMTimeline.window.saveAnimatorData();
 			// refresh component
 			didUpdate = true;
 			// refresh values
@@ -105,13 +109,4 @@ public class CustomInspector : EditorWindow
 		GUILayout.EndHorizontal();	
 		return didUpdate;
 	}	
-
-
-	void loadAnimatorData()
-	{
-		GameObject go = GameObject.Find ("AnimatorData");
-		if(go) {
-			aData = (AnimatorData) go.GetComponent ("AnimatorData");
-		}
-	}
 }

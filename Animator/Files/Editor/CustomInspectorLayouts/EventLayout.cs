@@ -279,9 +279,8 @@ public class EventLayout{
 			else if(t == typeof(MeshCollider)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(MeshCollider),true))) saveChanges = true; }
 			else if(t == typeof(WheelCollider)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(WheelCollider),true))) saveChanges = true; }
 			else if(t == typeof(TerrainCollider)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(TerrainCollider),true))) saveChanges = true; }
-			else if(t == typeof(InteractiveCloth)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(InteractiveCloth),true))) saveChanges = true; }
-			else if(t == typeof(SkinnedCloth)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(SkinnedCloth),true))) saveChanges = true; }
-			else if(t == typeof(ClothRenderer)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(ClothRenderer),true))) saveChanges = true; }
+			else if(t == typeof(SkinnedMeshRenderer)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(SkinnedMeshRenderer),true))) saveChanges = true; }
+			else if(t == typeof(Cloth)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(Cloth),true))) saveChanges = true; }
 			else if(t == typeof(HingeJoint)){ if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(HingeJoint),true))) saveChanges = true; }
 			else if(t == typeof(FixedJoint)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(FixedJoint),true))) saveChanges = true; }
 			else if(t == typeof(SpringJoint)) { if(parameter.setObject(EditorGUILayout.ObjectField(parameter.val_obj,typeof(SpringJoint),true))) saveChanges = true; }

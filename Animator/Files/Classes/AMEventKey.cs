@@ -89,27 +89,4 @@ public class AMEventKey : AMKey {
 		}
 		return a;
 	}
-	
-	public List<GameObject> getDependencies() {
-		List<GameObject> ls = new List<GameObject>();
-		foreach(AMEventParameter param in parameters) {
-			ls = ls.Union(param.getDependencies()).ToList();
-		}
-		return ls;
-	}
-	
-	public bool updateDependencies (List<GameObject> newReferences, List<GameObject> oldReferences, bool didUpdateObj, GameObject obj)
-	{
-		if(didUpdateObj && component) {
-			string componentName = component.GetType().Name;
-			component = obj.GetComponent(componentName);
-			if(!component) Debug.LogError("Animator: Component '"+componentName+"' not found on new reference for GameObject '"+obj.name+"'. Some event track data may be lost.");
-			cachedMethodInfo = null;
-		}
-		bool didUpdateParameter = false;
-		foreach(AMEventParameter param in parameters) {
-			if(param.updateDependencies(newReferences,oldReferences) && !didUpdateParameter) didUpdateParameter = true;
-		}
-		return didUpdateParameter;
-	}
 }

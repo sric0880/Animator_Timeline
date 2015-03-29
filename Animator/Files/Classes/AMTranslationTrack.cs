@@ -66,7 +66,7 @@ public class AMTranslationTrack : AMTrack {
 	}
 	
 	// preview a frame in the scene view
-	public override void previewFrame(float frame, AMTrack extraTrack = null) {
+	public override void previewFrame(float frame) {
 		if(!obj) return;
 		if(cache.Count <= 0) return;
 		// if before first frame
@@ -92,7 +92,7 @@ public class AMTranslationTrack : AMTrack {
 			
 			AMTween.EasingFunction ease;
 			AnimationCurve curve = null;
-			
+
 			if(action.hasCustomEase()) {
 				ease = AMTween.customEase;
 				curve = action.easeCurve;
@@ -100,33 +100,12 @@ public class AMTranslationTrack : AMTrack {
 				ease =  AMTween.GetEasingFunction((AMTween.EaseType)action.easeType);
 			}
 			
-			_value = ease(0f,1f,framePositionInPath/action.getNumberOfFrames(),curve);
+			_value = ease(0f,1f,framePositionInPath/action.NumberOfFrames,curve);
 			
 			AMTween.PutOnPath(obj,action.path,Mathf.Clamp (_value,0f,1f));
 			return;
 		}
 		
-	}
-	// returns true if autoKey successful
-	public bool autoKey(Transform _obj, int frame) {
-		if(!obj) return false;
-		if(_obj != obj) return false;
-		
-		if(cache.Count <= 0) {
-			if(_obj.position != cachedInitialPosition) {
-				// if updated position, addkey
-				addKey (frame,_obj.position);
-				return true;
-			}
-			return false;
-		}
-		Vector3 oldPos = getPositionAtFrame((float)frame);
-		if(_obj.position != oldPos) {
-			// if updated position, addkey
-			addKey (frame,_obj.position);
-			return true;
-		}
-		return false;
 	}
 	public Vector3 getPositionAtFrame(float frame) {
 		if(cache.Count <= 0) return obj.position;
@@ -147,16 +126,16 @@ public class AMTranslationTrack : AMTrack {
 			// ease
 			AMTween.EasingFunction ease;
 			AnimationCurve curve = null;
-			
-			if(action.hasCustomEase()) {
+
+			if (action.hasCustomEase()){
 				ease = AMTween.customEase;
 				curve = action.easeCurve;
-			} else {
+			}else {
 				ease = AMTween.GetEasingFunction((AMTween.EaseType)action.easeType);
 			}
 			float framePositionInPath = frame-(float)action.startFrame;
 			if (framePositionInPath<0f) framePositionInPath = 0f;
-			return AMTween.PointOnPath(action.path,Mathf.Clamp (ease(0f,1f,framePositionInPath/action.getNumberOfFrames(),curve),0f,1f));
+			return AMTween.PointOnPath(action.path,Mathf.Clamp (ease(0f,1f,framePositionInPath/action.NumberOfFrames,curve),0f,1f));
 		}	
 		Debug.LogError("Animator: Could not get "+obj.name+" position at frame '"+frame+"'");
 		return new Vector3(0f,0f,0f);
@@ -211,7 +190,7 @@ public class AMTranslationTrack : AMTrack {
 				a.obj = obj;
 				a.path = path.path;
 				a.easeType = (keys[i] as AMTranslationKey).easeType;
-				a.customEase = new List<float>(keys[i].customEase);
+				a.customEase = new List<float>((keys[i] as AMTranslationKey).customEase);
 				cache.Add (a);
 			if(i<keys.Count-1) i=path.endIndex-1;
 		}
@@ -236,35 +215,4 @@ public class AMTranslationTrack : AMTrack {
 	public Vector3 getInitialPosition() {
 		return (keys[0] as AMTranslationKey).position;
 	}
-	
-	public override AnimatorTimeline.JSONInit getJSONInit ()
-	{
-		if(!obj || keys.Count <= 0) return null;
-		AnimatorTimeline.JSONInit init = new AnimatorTimeline.JSONInit();
-		init.type = "position";
-		init.go = obj.gameObject.name;
-		AnimatorTimeline.JSONVector3 v = new AnimatorTimeline.JSONVector3();
-		v.setValue(getInitialPosition());
-		init.position = v;
-		return init;
-	}
-	
-	public override List<GameObject> getDependencies() {
-		List<GameObject> ls = new List<GameObject>();
-		if(obj) ls.Add(obj.gameObject);
-		return ls;
-	}
-	
-	public override List<GameObject> updateDependencies (List<GameObject> newReferences, List<GameObject> oldReferences)
-	{
-		if(!obj) return new List<GameObject>();
-		for(int i=0;i<oldReferences.Count;i++) {
-			if(oldReferences[i] == obj.gameObject) {
-				obj = newReferences[i].transform;
-				break;
-			}
-		}
-		return new List<GameObject>();
-	}
-
 }

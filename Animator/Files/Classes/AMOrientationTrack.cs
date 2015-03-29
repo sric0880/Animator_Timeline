@@ -85,7 +85,7 @@ public class AMOrientationTrack : AMTrack {
 		return (keys[0] as AMOrientationKey).target;
 	}
 	
-	public override void previewFrame(float frame , AMTrack extraTrack = null) {
+	public override void previewFrame(float frame) {
 
 		if(cache == null || cache.Count <= 0) {
 			return;
@@ -104,7 +104,7 @@ public class AMOrientationTrack : AMTrack {
 				if(!(cache[i] as AMOrientationAction).startTarget || !(cache[i] as AMOrientationAction).endTarget) return;
 				float framePositionInPath = frame-(float)cache[i].startFrame;
 				if (framePositionInPath<0f) framePositionInPath = 0f;
-				float percentage = framePositionInPath/cache[i].getNumberOfFrames();
+				float percentage = framePositionInPath/cache[i].NumberOfFrames;
 				if((cache[i] as AMOrientationAction).isLookFollow()) obj.rotation = (cache[i] as AMOrientationAction).getQuaternionAtPercent(percentage);
 				else {
 					Vector3? startPos = (cachedTranslationTrackStartTarget == null ? null : (Vector3?)(cachedTranslationTrackStartTarget as AMTranslationTrack).getPositionAtFrame((cache[i] as AMOrientationAction).startFrame));
@@ -140,22 +140,8 @@ public class AMOrientationTrack : AMTrack {
 		else return getStartTargetForFrame(frame);
 	}
 	// draw gizmos
-	public void drawGizmos(float gizmo_size, bool inPlayMode, int frame) {
+	public override void drawGizmos(float gizmo_size) {
 		if(!obj) return;
-		// draw line to target
-		if(!inPlayMode) {
-			foreach(AMAction action in cache) {
-				if((action as AMOrientationAction).startFrame > frame) break;
-				if(frame >= (action as AMOrientationAction).startFrame && frame <= (action as AMOrientationAction).endFrame) {
-					if((action as AMOrientationAction).isLookFollow() && (action as AMOrientationAction).startTarget) {
-						Gizmos.color = new Color(245f/255f,107f/255f,30f/255f,0.2f);
-						Gizmos.DrawLine(obj.transform.position, (action as AMOrientationAction).startTarget.transform.position);
-					}
-					break;	
-				}
-				
-			}
-		}
 		// draw arrow
 		Gizmos.color = new Color(245f/255f,107f/255f,30f/255f,1f);
 		Vector3 pos = obj.transform.position;
@@ -178,57 +164,11 @@ public class AMOrientationTrack : AMTrack {
 		else if((int)frame > keys[keys.Count-1].frame) return true;
 		else return false;
 	}
-	
-	
+
 	public bool hasTarget(Transform obj) {
 		foreach(AMOrientationAction action in cache) {
 			if(action.startTarget == obj || action.endTarget == obj) return true;
 		}
 		return false;
-	}
-	
-	
-	public override AnimatorTimeline.JSONInit getJSONInit ()
-	{
-		if(!obj || keys.Count <= 0) return null;
-		AnimatorTimeline.JSONInit init = new AnimatorTimeline.JSONInit();
-		init.type = "orientation";
-		init.go = obj.gameObject.name;
-		Transform _target = getInitialTarget();
-		int start_frame = keys[0].frame;
-		AMTrack _translation_track = null;
-		if(start_frame > 0) _translation_track = parentTake.getTranslationTrackForTransform(_target);
-		Vector3 _lookv3 = _target.transform.position;
-		if(_translation_track) _lookv3 = (_translation_track as AMTranslationTrack).getPositionAtFrame(start_frame);
-		AnimatorTimeline.JSONVector3 v = new AnimatorTimeline.JSONVector3();
-		v.setValue(_lookv3);
-		init.position = v;
-		return init;
-	}
-	
-	public override List<GameObject> getDependencies() {
-		List<GameObject> ls = new List<GameObject>();
-		if(obj) ls.Add(obj.gameObject);
-		foreach(AMOrientationKey key in keys) {
-			if(key.target) ls.Add(key.target.gameObject);
-		}
-		return ls;
-	}
-	public override List<GameObject> updateDependencies (List<GameObject> newReferences, List<GameObject> oldReferences)
-	{
-		bool didUpdateObj = false;
-		for(int i=0;i<oldReferences.Count;i++) {
-			if(!didUpdateObj && obj && oldReferences[i] == obj.gameObject) {
-				obj = newReferences[i].transform;
-				didUpdateObj = true;
-			}
-			foreach(AMOrientationKey key in keys) {
-				if(key.target && oldReferences[i] == key.target.gameObject) {
-					key.target = newReferences[i].transform;
-				}
-			}
-		}
-		
-		return new List<GameObject>();
 	}
 }

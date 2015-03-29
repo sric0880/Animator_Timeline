@@ -29,9 +29,7 @@ public class AMAudioTrack : AMTrack {
 		for(int i=0;i<keys.Count;i++) {
 			AMAudioAction a = ScriptableObject.CreateInstance<AMAudioAction> ();
 			a.startFrame = keys[i].frame;
-			a.audioSource = audioSource;
-			a.audioClip = (keys[i] as AMAudioKey).audioClip;
-			a.loop = (keys[i] as AMAudioKey).loop;
+			a.aKey = keys[i] as AMAudioKey;
 			cache.Add (a);
 		}
 		base.updateCache();
@@ -58,90 +56,33 @@ public class AMAudioTrack : AMTrack {
 		updateCache();
 	}
 	
-	public override void previewFrame(float frame, AMTrack extraTrack = null) { 
-		// do nothing 
-	}
-	// sample audio between frames
-	public void sampleAudio(float frame, float speed, int frameRate) {
+	// sample audio at frame
+	public void sampleAudio(float frame) {
 		if(!audioSource) return;
-		float time;
 		for(int i=cache.Count-1;i>=0;i--) {
-			if(!(cache[i] as AMAudioAction).audioClip) return;
-			if(cache[i].startFrame <= frame) {
-				// get time
-				time = ((frame-cache[i].startFrame)/frameRate);
-				// if loop is set to false and is beyond length, then return
-				if(!(cache[i] as AMAudioAction).loop && time > (cache[i] as AMAudioAction).audioClip.length) return;
-				// find time based on length
-				time = time % (cache[i] as AMAudioAction).audioClip.length;
-				if(audioSource.isPlaying) audioSource.Stop();
-				audioSource.clip = null;
-				audioSource.clip = (cache[i] as AMAudioAction).audioClip;
-				audioSource.loop = (cache[i] as AMAudioAction).loop;
-				audioSource.time = time;
-				audioSource.pitch = speed;
-				
+			AMAudioKey key = (cache[i] as AMAudioAction).aKey;
+			if(!key.audioClip) return;
+			if(cache[i].startFrame == frame) {
+				audioSource.clip = key.audioClip;
+				audioSource.loop = key.loop;
+				audioSource.pitch = 1;
+				audioSource.time = 0;
 				audioSource.Play();
 				
 				return;
+			}else if (cache[i].startFrame < frame){
+				// get time
+//				time = ((frame-cache[i].startFrame)/frameRate);
+//				// if loop is set to false and is beyond length, then return
+//				if(!key.loop && time > key.audioClip.length) return;
+//				// find time based on length
+//				time = time % key.audioClip.length;
 			}
 		}
 	}
-	// sample audio at frame
-	public void sampleAudioAtFrame(int frame, float speed, int frameRate) {
-		if(!audioSource) return;
-		
-		for(int i=cache.Count-1;i>=0;i--) {
-			if(cache[i].startFrame == frame) {
-				if(audioSource.isPlaying) audioSource.Stop();
-				audioSource.clip = null;
-				audioSource.clip = (cache[i] as AMAudioAction).audioClip;
-				audioSource.time = 0f;
-				audioSource.loop = (cache[i] as AMAudioAction).loop;
-				audioSource.pitch = speed;
-				audioSource.Play();
-				return;
-			}
-		}	
-	}	
+
 	public void stopAudio() {
 		if(!audioSource) return;
 		if(audioSource.isPlaying) audioSource.Stop();
-	}
-	
-	public ulong getTimeInSamples(int frequency, float time) {
-		return (ulong)((44100/frequency)*frequency*time);	
-	}
-	
-	public override AnimatorTimeline.JSONInit getJSONInit ()
-	{
-		// no initial values to set
-		return null;
-	}
-	
-	public override List<GameObject> getDependencies() {
-		List<GameObject> ls = new List<GameObject>();
-		if(audioSource) ls.Add(audioSource.gameObject);
-		return ls;
-	}
-	
-	public override List<GameObject> updateDependencies (List<GameObject> newReferences, List<GameObject> oldReferences)
-	{
-		List<GameObject> lsFlagToKeep = new List<GameObject>();
-		if(!audioSource) return lsFlagToKeep;
-		for(int i=0;i<oldReferences.Count;i++) {
-			if(oldReferences[i] == audioSource.gameObject) {
-				AudioSource _audioSource = (AudioSource) newReferences[i].GetComponent(typeof(AudioSource));
-				// missing audiosource
-				if(!_audioSource) {
-					Debug.LogWarning("Animator: Audio Track component 'AudioSource' not found on new reference for GameObject '"+audioSource.gameObject.name+"'. Duplicate not replaced.");
-					lsFlagToKeep.Add(oldReferences[i]);
-					return lsFlagToKeep;
-				}
-				audioSource = _audioSource;
-				break;
-			}
-		}
-		return lsFlagToKeep;
 	}
 }

@@ -6,16 +6,7 @@ using System.Collections.Generic;
 public class AMKey : ScriptableObject {
 
 	public int frame;
-	public int easeType = (int)AMTween.EaseType.linear; 			// ease type, AMTween.EaseType enum
-	public List<float> customEase = new List<float>();
-	private AnimationCurve _cachedEaseCurve;
-	public AnimationCurve easeCurve {
-		get {
-			if(_cachedEaseCurve == null || _cachedEaseCurve.keys.Length <= 0) _cachedEaseCurve = getCustomEaseCurve();
-			return _cachedEaseCurve;
-		}
-	}
-	
+
 	public virtual void destroy() {
 		Object.DestroyImmediate (this);	
 	}
@@ -25,7 +16,18 @@ public class AMKey : ScriptableObject {
 		Debug.LogError("Animator: No override for CreateClone()");
 		return a;
 	}
+
+	public int easeType = (int)AMTween.EaseType.linear; 			// ease type, AMTween.EaseType enum
+	public List<float> customEase = new List<float>();
 	
+	private AnimationCurve _cachedEaseCurve;
+	public AnimationCurve easeCurve {
+		get {
+			if(_cachedEaseCurve == null || _cachedEaseCurve.keys.Length <= 0) _cachedEaseCurve = getCustomEaseCurve();
+			return _cachedEaseCurve;
+		}
+	}
+
 	public bool setEaseType(int easeType) {
 		if(easeType != this.easeType) {
 			this.easeType = easeType;

@@ -80,9 +80,11 @@ public class AMCameraFade : MonoBehaviour {
 	void Awake() {
 		if(Application.isPlaying && preview) destroy();
 		else {
-			this.camera.clearFlags = CameraClearFlags.Nothing;
-			this.camera.cullingMask = 0;
-			this.camera.depth = -1;
+			Camera camera = GetComponent<Camera>();
+			if(camera == null) return;
+			camera.clearFlags = CameraClearFlags.Nothing;
+			camera.cullingMask = 0;
+			camera.depth = -1;
 			keepAliveAwake = true;
 		}
 	}

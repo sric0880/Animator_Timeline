@@ -553,7 +553,7 @@ public class AMPropertyTrack : AMTrack {
 			
 			float framePositionInAction = frame-(float)action.startFrame;
 			if (framePositionInAction<0f) framePositionInAction = 0f;
-			float percentage = framePositionInAction/action.getNumberOfFrames();
+			float percentage = framePositionInAction/action.NumberOfFrames;
 			
 
 			
@@ -753,109 +753,8 @@ public class AMPropertyTrack : AMTrack {
 				return true;
 			return false;
 	}
-	
 	public string[] getMorphNames() {
 		if(!component || methodInfoMorphNames == null) return new string[]{};
 		return (string[])methodInfoMorphNames.Invoke(component,null);	
-	}
-	
-	public override AnimatorTimeline.JSONInit getJSONInit ()
-	{
-		if(!obj || keys.Count <= 0 || cache.Count <= 0) return null;
-		AnimatorTimeline.JSONInit init = new AnimatorTimeline.JSONInit();
-		init.go = obj.gameObject.name;
-		List<string> strings = new List<string>();
-		strings.Add(component.GetType().Name);
-		if(fieldInfo != null) {
-			init.typeExtra = "fieldinfo";
-			strings.Add(fieldInfo.Name);
-		} else if(propertyInfo != null) {
-			init.typeExtra = "propertyinfo";
-			strings.Add(propertyInfo.Name);
-		} else if(methodInfo != null) {
-			init.typeExtra = "methodinfo";
-			strings.Add(methodInfo.Name);
-			// parameter types
-			foreach(string s in methodParameterTypes) {
-				strings.Add(s);	
-			}
-		}
-		if(valueType == (int)ValueType.MorphChannels) {
-			init.type = "propertymorph";
-			init.floats = (cache[0] as AMPropertyAction).start_morph.ToArray();
-		} else if(valueType == (int)ValueType.Integer) {
-			init.type = "propertyint";
-			init._int = Convert.ToInt32((cache[0] as AMPropertyAction).start_val);
-		} else if(valueType == (int)ValueType.Long) {
-			init.type = "propertylong";
-			init._long = Convert.ToInt64((cache[0] as AMPropertyAction).start_val);
-		} else if(valueType == (int)ValueType.Float) {
-			init.type = "propertyfloat";
-			init.floats = new float[]{Convert.ToSingle((cache[0] as AMPropertyAction).start_val)};
-		} else if(valueType == (int)ValueType.Double) {
-			init.type = "propertydouble";
-			init._double = (cache[0] as AMPropertyAction).start_val;
-		} else if(valueType == (int)ValueType.Vector2) {
-			init.type = "propertyvect2";
-			AnimatorTimeline.JSONVector2 v2 = new AnimatorTimeline.JSONVector2();
-			v2.setValue((cache[0] as AMPropertyAction).start_vect2);
-			init._vect2 = v2;
-		} else if(valueType == (int)ValueType.Vector3) {
-			init.type = "propertyvect3";
-			AnimatorTimeline.JSONVector3 v3 = new AnimatorTimeline.JSONVector3();
-			v3.setValue((cache[0] as AMPropertyAction).start_vect3);
-			init.position = v3;
-		} else if(valueType == (int)ValueType.Color) {
-			init.type = "propertycolor";
-			AnimatorTimeline.JSONColor c = new AnimatorTimeline.JSONColor();
-			c.setValue((cache[0] as AMPropertyAction).start_color);
-			init._color = c;
-		} else if(valueType == (int)ValueType.Rect) {
-			init.type = "propertyrect";
-			AnimatorTimeline.JSONRect r = new AnimatorTimeline.JSONRect();
-			r.setValue((cache[0] as AMPropertyAction).start_rect);
-			init._rect = r;
-		} else {
-			Debug.LogWarning("Animator: Error exporting JSON, unknown Property ValueType "+valueType);
-			return null;
-		}
-		init.strings = strings.ToArray();
-		return init;
-	}
-	
-	public override List<GameObject> getDependencies() {
-		List<GameObject> ls = new List<GameObject>();
-		if(obj) ls.Add(obj);
-		return ls;
-	}
-	
-	public override List<GameObject> updateDependencies (List<GameObject> newReferences, List<GameObject> oldReferences)
-	{
-		List<GameObject> lsFlagToKeep = new List<GameObject>();
-		if(!obj) return lsFlagToKeep;
-		for(int i=0;i<oldReferences.Count;i++) {
-			if(oldReferences[i] == obj) {
-				string componentName = component.GetType().Name;
-				Component _component = newReferences[i].GetComponent(componentName);
-				
-				// missing component
-				if(!_component) {
-					Debug.LogWarning("Animator: Property Track component '"+componentName+"' not found on new reference for GameObject '"+obj.name+"'. Duplicate not replaced.");
-					lsFlagToKeep.Add(oldReferences[i]);
-					return lsFlagToKeep;
-				}
-				// missing property
-				if(_component.GetType().GetProperty(propertyName) == null) {
-					Debug.LogWarning("Animator: Property Track property '"+propertyName+"' not found on new reference for GameObject '"+obj.name+"'. Duplicate not replaced.");
-					lsFlagToKeep.Add(oldReferences[i]);
-					return lsFlagToKeep;
-				}
-				
-				obj = newReferences[i];
-				component = _component;
-				break;
-			}
-		}
-		return lsFlagToKeep;
 	}
 }

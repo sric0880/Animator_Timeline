@@ -73,7 +73,7 @@ public class AMRotationTrack : AMTrack {
 
 	}
 	// preview a frame in the scene view
-	public override void previewFrame(float frame, AMTrack extraTrack = null) {
+	public override void previewFrame(float frame) {
 		if(!obj) return;
 		if(cache.Count <= 0) return;
 		if(cache[0] == null) updateCache();
@@ -114,7 +114,7 @@ public class AMRotationTrack : AMTrack {
 			
 			float framePositionInAction = frame-(float)action.startFrame;
 			if (framePositionInAction<0f) framePositionInAction = 0f;
-			float percentage = framePositionInAction/action.getNumberOfFrames();
+			float percentage = framePositionInAction/action.NumberOfFrames;
 			
 			Quaternion qStart = action.getStartQuaternion();
 			Quaternion qEnd = action.getEndQuaternion();
@@ -129,27 +129,6 @@ public class AMRotationTrack : AMTrack {
 
 			return;
 		}
-	}
-	// returns true if autoKey successful
-	public bool autoKey(Transform _obj, int frame) {
-		if(!obj) return false;
-		if(obj != _obj) return false;
-		
-		if(cache.Count <= 0) {
-			if(_obj.rotation != cachedInitialRotation) {
-				// if updated position, addkey
-				addKey (frame,_obj.rotation);
-				return true;
-			}
-			return false;
-		}
-		Quaternion oldRot = getRotationAtFrame((float)frame);
-		if(_obj.rotation != oldRot) {
-			// if updated position, addkey
-			addKey (frame,_obj.rotation);
-			return true;
-		}
-		return false;
 	}
 	public Quaternion getRotationAtFrame(float frame) {
 		// if before or equal to first frame, or is the only frame
@@ -187,7 +166,7 @@ public class AMRotationTrack : AMTrack {
 			
 			float framePositionInAction = frame-(float)action.startFrame;
 			if (framePositionInAction<0f) framePositionInAction = 0f;
-			float percentage = framePositionInAction/action.getNumberOfFrames();
+			float percentage = framePositionInAction/action.NumberOfFrames;
 			
 			Quaternion qStart = action.getStartQuaternion();
 			Quaternion qEnd = action.getEndQuaternion();
@@ -205,34 +184,5 @@ public class AMRotationTrack : AMTrack {
 	}
 	public Vector3 getInitialRotation() {
 		return (keys[0] as AMRotationKey).getRotation();
-	}
-	
-	public override AnimatorTimeline.JSONInit getJSONInit ()
-	{
-		if(!obj || keys.Count <= 0) return null;
-		AnimatorTimeline.JSONInit init = new AnimatorTimeline.JSONInit();
-		init.type = "rotation";
-		init.go = obj.gameObject.name;
-		AnimatorTimeline.JSONQuaternion q = new AnimatorTimeline.JSONQuaternion();
-		q.setValue(getInitialRotation());
-		init.rotation = q;
-		return init;
-	}
-	
-	public override List<GameObject> getDependencies() {
-		List<GameObject> ls = new List<GameObject>();
-		if(obj) ls.Add(obj.gameObject);
-		return ls;
-	}
-	public override List<GameObject> updateDependencies (List<GameObject> newReferences, List<GameObject> oldReferences)
-	{
-		if(!obj) return new List<GameObject>();
-		for(int i=0;i<oldReferences.Count;i++) {
-			if(oldReferences[i] == obj.gameObject) {
-				obj = newReferences[i].transform;
-				break;
-			}
-		}
-		return new List<GameObject>();
 	}
 }

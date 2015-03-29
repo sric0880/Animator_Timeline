@@ -73,7 +73,7 @@ public class CameraSwitcherLayout {
 			// update cache when modifying variables
 			track.updateCache();
 			// save data
-			AMTimeline.window.refreshGizmos();
+			AMTimeline.window.saveAnimatorData();
 			// preview current frame
 			AMTimeline.window.aData.getCurrentTake().previewFrame(key.frame);
 			// refresh values

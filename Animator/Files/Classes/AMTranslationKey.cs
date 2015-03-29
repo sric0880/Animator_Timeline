@@ -12,7 +12,7 @@ public class AMTranslationKey : AMKey {
 	public static string[] InterpolationNames = new string[]{"Curve","Linear"};
 	public Vector3 position;
 	public int interp = 0;			// interpolation
-	
+
 	public bool setInterpolation(int _interp) {
 		if(_interp != interp) {
 			interp = _interp;
@@ -38,7 +38,7 @@ public class AMTranslationKey : AMKey {
 		a.interp = interp;
 		a.easeType = easeType;
 		a.customEase = new List<float>(customEase);
-		
+
 		return a;
 	}
 }
