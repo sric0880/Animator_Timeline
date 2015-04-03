@@ -7539,14 +7539,22 @@ public class AMTween : MonoBehaviour{
 	
 	private static void DrawPathHelper(Vector3[] path, Color color, string method){
 		Vector3[] vector3s = PathControlPointGenerator(path);
+
+		Gizmos.color = Color.green;
+		for(int i = 0; i < path.Length; ++i)
+		{
+			Gizmos.DrawSphere(path[i], 1.0f);
+		}
 		
 		//Line Draw:
 		Vector3 prevPt = Interp(vector3s,0);
-		Gizmos.color=color;
-		int SmoothAmount = path.Length*20;
+		int SmoothAmount = path.Length*40;
 		for (int i = 1; i <= SmoothAmount; i++) {
 			float pm = (float) i / SmoothAmount;
 			Vector3 currPt = Interp(vector3s,pm);
+//			float s = k/10.0f;
+			Gizmos.color=new Color(255f,255f,255f);
+//			Gizmos.color=new Color(255f*s,255f*s,255f*s);
 			if(method == "gizmos"){
 				Gizmos.DrawLine(currPt, prevPt);
 			}else if(method == "handles"){
@@ -7586,6 +7594,8 @@ public class AMTween : MonoBehaviour{
 		
 		return(vector3s);
 	}
+
+//	private static float k;
 	
 	//andeeee from the Unity forum's steller Catmull-Rom class ( http://forum.unity3d.com/viewtopic.php?p=218400#218400 ):
 	private static Vector3 Interp(Vector3[] pts, float t){
@@ -7597,13 +7607,42 @@ public class AMTween : MonoBehaviour{
 		Vector3 b = pts[currPt + 1];
 		Vector3 c = pts[currPt + 2];
 		Vector3 d = pts[currPt + 3];
+
+		float ab = (b-a).magnitude;
+		float bc = (c-b).magnitude;
+		float cd = (d-c).magnitude;
+		float n1 = bc/(ab+bc);
+		float n2 = bc/(bc+cd);
 		
-		return .5f * (
-			(-a + 3f * b - 3f * c + d) * (u * u * u)
-			+ (2f * a - 5f * b + 4f * c - d) * (u * u)
-			+ (-a + c) * u
-			+ 2f * b
-		);
+//		return .5f * (
+//			(-a + 3f * b - 3f * c + d) * (u * u * u)
+//			+ (2f * a - 5f * b + 4f * c - d) * (u * u)
+//			+ (-a + c) * u
+//			+ 2f * b
+//		);
+		//curvature
+
+//		Vector3 p1 = (
+//			3*(-n1*a + (2-n2) * b + (n1-2) * c + n2 * d) * (u * u)
+//			+ 2*(2*n1 * a + (n2-3) * b + (3-2*n1) * c - n2 * d) * u
+//			+ (-n1*a + n1*c)
+//			);
+//		Vector3 p2 = (
+//			6*(-n1*a + (2-n2) * b + (n1-2) * c + n2 * d) * u
+//			+ 2*(2*n1 * a + (n2-3) * b + (3-2*n1) * c - n2 * d)
+//			);
+//
+//		float u1 = p2.z*p1.y-p2.y*p1.z;
+//		float u2 = p2.x*p1.z-p2.z*p1.x;
+//		float u3 = p2.y*p1.x-p2.x*p1.y;
+//		k = Mathf.Sqrt(u1*u1+u2*u2+u3*u3)/Mathf.Pow(p1.x*p1.x+p1.y*p1.y+p1.z*p1.z, 1.5f);
+
+		return (
+			(-n1*a + (2-n2) * b + (n1-2) * c + n2 * d) * (u * u * u)
+			+ (2*n1 * a + (n2-3) * b + (3-2*n1) * c - n2 * d) * (u * u)
+			+ (-n1*a + n1*c) * u
+			+ b
+			);
 	}	
 		
 	//andeeee from the Unity forum's steller Catmull-Rom class ( http://forum.unity3d.com/viewtopic.php?p=218400#218400 ):

@@ -145,9 +145,9 @@ public class AMTranslationTrack : AMTrack {
 		foreach (AMTranslationAction action in cache) {
 			if(action.path.Length>1) {
 				AMTween.DrawPath(action.path, new Color(255f,255f,255f,.5f)); 
-				Gizmos.color = Color.green;
-       			Gizmos.DrawSphere(action.path[0], gizmo_size);
-				Gizmos.DrawSphere(action.path[action.path.Length-1], gizmo_size);
+//				Gizmos.color = Color.green;
+//       			Gizmos.DrawSphere(action.path[0], gizmo_size);
+//				Gizmos.DrawSphere(action.path[action.path.Length-1], gizmo_size);
 			}
 		}
 	}

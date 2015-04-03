@@ -70,7 +70,7 @@ public class AMAnimationTrack : AMTrack {
 				}
 				else if (key.wrapMode == WrapMode.Once)
 				{
-					if ( normalizedTime >= 1) normalizedTime = 0;
+					if ( normalizedTime >= 1) break;
 				}
 				else if (key.wrapMode == WrapMode.ClampForever)
 				{
